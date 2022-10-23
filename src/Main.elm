@@ -14,6 +14,7 @@ import Pixels
 import Point3d
 import Scene3d
 import Scene3d.Material as Material
+import Vector3d
 import Viewpoint3d
 
 
@@ -60,11 +61,7 @@ view model =
             ]
             [ Scene3d.unlit
                 { entities =
-                    [ Scene3d.quad (Material.color Color.blue)
-                        (Point3d.meters -1 -1 0)
-                        (Point3d.meters 1 -1 0)
-                        (Point3d.meters 1 1 0)
-                        (Point3d.meters -1 1 0)
+                    [ viewFlatSquare Point3d.origin
                     ]
                 , camera = camera
                 , clipDepth = Length.meters 1
@@ -74,6 +71,15 @@ view model =
             ]
         , div [] [ text (Debug.toString model) ]
         ]
+
+
+viewFlatSquare : Point3d.Point3d Length.Meters coordinates -> Scene3d.Entity coordinates
+viewFlatSquare point =
+    Scene3d.quad (Material.color Color.blue)
+        (Point3d.translateBy (Vector3d.from Point3d.origin (Point3d.meters -1 -1 0)) point)
+        (Point3d.translateBy (Vector3d.from Point3d.origin (Point3d.meters 1 -1 0)) point)
+        (Point3d.translateBy (Vector3d.from Point3d.origin (Point3d.meters 1 1 0)) point)
+        (Point3d.translateBy (Vector3d.from Point3d.origin (Point3d.meters -1 1 0)) point)
 
 
 subscriptions : Model -> Sub Msg
