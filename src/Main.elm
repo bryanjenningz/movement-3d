@@ -41,6 +41,18 @@ update msg model =
 
 view : Model -> Html msg
 view model =
+    let
+        camera =
+            Camera3d.perspective
+                { viewpoint =
+                    Viewpoint3d.lookAt
+                        { focalPoint = Point3d.origin
+                        , eyePoint = Point3d.meters 20 20 30
+                        , upDirection = Direction3d.positiveZ
+                        }
+                , verticalFieldOfView = Angle.degrees 30
+                }
+    in
     div []
         [ div
             [ style "border" "1px solid white"
@@ -54,16 +66,7 @@ view model =
                         (Point3d.meters 1 1 0)
                         (Point3d.meters -1 1 0)
                     ]
-                , camera =
-                    Camera3d.perspective
-                        { viewpoint =
-                            Viewpoint3d.lookAt
-                                { focalPoint = Point3d.origin
-                                , eyePoint = Point3d.meters 20 20 30
-                                , upDirection = Direction3d.positiveZ
-                                }
-                        , verticalFieldOfView = Angle.degrees 30
-                        }
+                , camera = camera
                 , clipDepth = Length.meters 1
                 , background = Scene3d.transparentBackground
                 , dimensions = ( Pixels.pixels 800, Pixels.pixels 600 )
