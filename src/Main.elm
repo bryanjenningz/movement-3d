@@ -23,25 +23,24 @@ import Viewpoint3d
 
 
 type alias Model =
-    { mouseX : Float
-    , mouseY : Float
+    { mousePoint : Point2d.Point2d Pixels.Pixels Pixels.Pixels
     }
 
 
 init : () -> ( Model, Cmd Msg )
 init () =
-    ( { mouseX = 0, mouseY = 0 }, Cmd.none )
+    ( { mousePoint = Point2d.pixels 0 0 }, Cmd.none )
 
 
 type Msg
-    = MouseDown Float Float
+    = MouseDown (Point2d.Point2d Pixels.Pixels Pixels.Pixels)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        MouseDown mouseX mouseY ->
-            ( { model | mouseX = mouseX, mouseY = mouseY }, Cmd.none )
+        MouseDown mousePoint ->
+            ( { model | mousePoint = mousePoint }, Cmd.none )
 
 
 view : Model -> Html msg
@@ -63,18 +62,14 @@ view model =
         screen =
             Rectangle2d.with
                 { x1 = Pixels.pixels 0
-                , y1 = Pixels.pixels 0
+                , y1 = Pixels.pixels 600
                 , x2 = Pixels.pixels 800
-                , y2 = Pixels.pixels 600
+                , y2 = Pixels.pixels 0
                 }
-
-        mousePoint : Point2d.Point2d Pixels.Pixels screenCoordinates
-        mousePoint =
-            Point2d.pixels 200 300
 
         mouseAxis : Axis3d.Axis3d Length.Meters coordinates
         mouseAxis =
-            Camera3d.ray camera screen mousePoint
+            Camera3d.ray camera screen model.mousePoint
 
         maybeXyPlaneMousePoint : Maybe (Point3d.Point3d Length.Meters coordinates)
         maybeXyPlaneMousePoint =
@@ -89,14 +84,10 @@ view model =
                 { entities =
                     [ case maybeXyPlaneMousePoint of
                         Nothing ->
-                            viewFlatSquare Point3d.origin
+                            viewSquare Point3d.origin
 
                         Just xyPlaneMousePoint ->
-                            viewFlatSquare xyPlaneMousePoint
-                    , viewFlatSquare (Point3d.meters 10 -9 0)
-                    , viewFlatSquare (Point3d.meters -10 -9 0)
-                    , viewFlatSquare (Point3d.meters 15 13 0)
-                    , viewFlatSquare (Point3d.meters -15 13 0)
+                            viewSquare xyPlaneMousePoint
                     ]
                 , camera = camera
                 , clipDepth = Length.meters 1
@@ -104,13 +95,11 @@ view model =
                 , dimensions = ( Pixels.pixels 800, Pixels.pixels 600 )
                 }
             ]
-        , div [] [ text (Debug.toString model) ]
-        , div [] [ text (Debug.toString camera) ]
         ]
 
 
-viewFlatSquare : Point3d.Point3d Length.Meters coordinates -> Scene3d.Entity coordinates
-viewFlatSquare point =
+viewSquare : Point3d.Point3d Length.Meters coordinates -> Scene3d.Entity coordinates
+viewSquare point =
     Scene3d.quad (Material.color Color.blue)
         (Point3d.translateBy (Vector3d.from Point3d.origin (Point3d.meters -1 -1 0)) point)
         (Point3d.translateBy (Vector3d.from Point3d.origin (Point3d.meters 1 -1 0)) point)
@@ -121,7 +110,7 @@ viewFlatSquare point =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     onMouseDown
-        (Decode.map2 MouseDown
+        (Decode.map2 (\x y -> MouseDown (Point2d.pixels x y))
             (Decode.field "clientX" Decode.float)
             (Decode.field "clientY" Decode.float)
         )
