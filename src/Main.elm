@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Angle
+import Axis3d
 import Browser
 import Browser.Events exposing (onMouseDown)
 import Camera3d
@@ -11,7 +12,10 @@ import Html.Attributes exposing (style)
 import Json.Decode as Decode
 import Length
 import Pixels
+import Plane3d
+import Point2d
 import Point3d
+import Rectangle2d
 import Scene3d
 import Scene3d.Material as Material
 import Vector3d
@@ -43,6 +47,7 @@ update msg model =
 view : Model -> Html msg
 view model =
     let
+        camera : Camera3d.Camera3d Length.Meters coordinates
         camera =
             Camera3d.perspective
                 { viewpoint =
@@ -53,6 +58,27 @@ view model =
                         }
                 , verticalFieldOfView = Angle.degrees 30
                 }
+
+        screen : Rectangle2d.Rectangle2d Pixels.Pixels coordinates
+        screen =
+            Rectangle2d.with
+                { x1 = Pixels.pixels 0
+                , y1 = Pixels.pixels 0
+                , x2 = Pixels.pixels 800
+                , y2 = Pixels.pixels 600
+                }
+
+        mousePoint : Point2d.Point2d Pixels.Pixels screenCoordinates
+        mousePoint =
+            Point2d.pixels 200 300
+
+        mouseAxis : Axis3d.Axis3d Length.Meters coordinates
+        mouseAxis =
+            Camera3d.ray camera screen mousePoint
+
+        maybeXyPlaneMousePoint : Maybe (Point3d.Point3d Length.Meters coordinates)
+        maybeXyPlaneMousePoint =
+            Axis3d.intersectionWithPlane Plane3d.xy mouseAxis
     in
     div []
         [ div
@@ -61,7 +87,12 @@ view model =
             ]
             [ Scene3d.unlit
                 { entities =
-                    [ viewFlatSquare Point3d.origin
+                    [ case maybeXyPlaneMousePoint of
+                        Nothing ->
+                            viewFlatSquare Point3d.origin
+
+                        Just xyPlaneMousePoint ->
+                            viewFlatSquare xyPlaneMousePoint
                     , viewFlatSquare (Point3d.meters 10 -9 0)
                     , viewFlatSquare (Point3d.meters -10 -9 0)
                     , viewFlatSquare (Point3d.meters 15 13 0)
