@@ -62,6 +62,10 @@ view model =
             [ Scene3d.unlit
                 { entities =
                     [ viewFlatSquare Point3d.origin
+                    , viewFlatSquare (Point3d.meters 0 -27 0)
+                    , viewFlatSquare (Point3d.meters 0 16 0)
+                    , viewFlatSquare (Point3d.meters 16 0 0)
+                    , viewFlatSquare (Point3d.meters -27 0 0)
                     ]
                 , camera = camera
                 , clipDepth = Length.meters 1
