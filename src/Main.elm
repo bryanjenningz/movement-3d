@@ -101,10 +101,10 @@ view model =
 viewSquare : Point3d.Point3d Length.Meters coordinates -> Scene3d.Entity coordinates
 viewSquare point =
     Scene3d.quad (Material.color Color.blue)
-        (Point3d.translateBy (Vector3d.from Point3d.origin (Point3d.meters -1 -1 0)) point)
-        (Point3d.translateBy (Vector3d.from Point3d.origin (Point3d.meters 1 -1 0)) point)
-        (Point3d.translateBy (Vector3d.from Point3d.origin (Point3d.meters 1 1 0)) point)
-        (Point3d.translateBy (Vector3d.from Point3d.origin (Point3d.meters -1 1 0)) point)
+        (Point3d.translateBy (Vector3d.meters -1 -1 0) point)
+        (Point3d.translateBy (Vector3d.meters 1 -1 0) point)
+        (Point3d.translateBy (Vector3d.meters 1 1 0) point)
+        (Point3d.translateBy (Vector3d.meters -1 1 0) point)
 
 
 subscriptions : Model -> Sub Msg
