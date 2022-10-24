@@ -82,13 +82,18 @@ view model =
             ]
             [ Scene3d.unlit
                 { entities =
-                    [ case maybeXyPlaneMousePoint of
+                    (case maybeXyPlaneMousePoint of
                         Nothing ->
                             viewSquare Point3d.origin
 
                         Just xyPlaneMousePoint ->
                             viewSquare xyPlaneMousePoint
-                    ]
+                    )
+                        :: [ viewSquare (Point3d.meters -5 5 0)
+                           , viewSquare (Point3d.meters -5 -5 0)
+                           , viewSquare (Point3d.meters 5 5 0)
+                           , viewSquare (Point3d.meters 5 -5 0)
+                           ]
                 , camera = camera
                 , clipDepth = Length.meters 1
                 , background = Scene3d.transparentBackground
