@@ -48,7 +48,7 @@ view model =
                 { viewpoint =
                     Viewpoint3d.lookAt
                         { focalPoint = Point3d.origin
-                        , eyePoint = Point3d.meters 20 20 30
+                        , eyePoint = Point3d.meters 0 -20 30
                         , upDirection = Direction3d.positiveZ
                         }
                 , verticalFieldOfView = Angle.degrees 30
@@ -62,10 +62,10 @@ view model =
             [ Scene3d.unlit
                 { entities =
                     [ viewFlatSquare Point3d.origin
-                    , viewFlatSquare (Point3d.meters 0 -27 0)
-                    , viewFlatSquare (Point3d.meters 0 16 0)
-                    , viewFlatSquare (Point3d.meters 16 0 0)
-                    , viewFlatSquare (Point3d.meters -27 0 0)
+                    , viewFlatSquare (Point3d.meters 10 -9 0)
+                    , viewFlatSquare (Point3d.meters -10 -9 0)
+                    , viewFlatSquare (Point3d.meters 15 13 0)
+                    , viewFlatSquare (Point3d.meters -15 13 0)
                     ]
                 , camera = camera
                 , clipDepth = Length.meters 1
@@ -74,6 +74,7 @@ view model =
                 }
             ]
         , div [] [ text (Debug.toString model) ]
+        , div [] [ text (Debug.toString camera) ]
         ]
 
 
