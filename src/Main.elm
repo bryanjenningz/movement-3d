@@ -1,20 +1,20 @@
 module Main exposing (main)
 
 import Angle
-import Axis3d
+import Axis3d exposing (Axis3d)
 import Browser
 import Browser.Events exposing (onAnimationFrame, onKeyDown, onKeyUp, onMouseDown)
-import Camera3d
+import Camera3d exposing (Camera3d)
 import Color
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (style)
 import Json.Decode as Decode
-import Length
-import Pixels
+import Length exposing (Meters)
+import Pixels exposing (Pixels)
 import Plane3d
-import Point2d
-import Point3d
-import Rectangle2d
+import Point2d exposing (Point2d)
+import Point3d exposing (Point3d)
+import Rectangle2d exposing (Rectangle2d)
 import Scene3d
 import Scene3d.Material as Material
 import Set exposing (Set)
@@ -24,7 +24,7 @@ import Viewpoint3d
 
 
 type alias Model =
-    { mousePoint : Point2d.Point2d Pixels.Pixels Pixels.Pixels
+    { location : Point3d Meters Meters
     , cameraAngle : Angle.Angle
     , keysDown : Set String
     }
@@ -32,7 +32,7 @@ type alias Model =
 
 init : () -> ( Model, Cmd Msg )
 init () =
-    ( { mousePoint = Point2d.pixels 0 0
+    ( { location = Point3d.meters 0 0 0
       , cameraAngle = Angle.turns 0
       , keysDown = Set.empty
       }
@@ -42,7 +42,7 @@ init () =
 
 type Msg
     = AnimationFrame
-    | MouseDown (Point2d.Point2d Pixels.Pixels Pixels.Pixels)
+    | MouseDown (Point2d Pixels Meters)
     | KeyDown String
     | KeyUp String
 
@@ -77,7 +77,34 @@ update msg model =
                 ( model, Cmd.none )
 
         MouseDown mousePoint ->
-            ( { model | mousePoint = mousePoint }, Cmd.none )
+            let
+                camera : Camera3d Meters Meters
+                camera =
+                    getCamera model
+
+                screen : Rectangle2d Pixels Meters
+                screen =
+                    Rectangle2d.with
+                        { x1 = Pixels.pixels 0
+                        , y1 = Pixels.pixels 600
+                        , x2 = Pixels.pixels 800
+                        , y2 = Pixels.pixels 0
+                        }
+
+                mouseAxis : Axis3d Meters Meters
+                mouseAxis =
+                    Camera3d.ray camera screen mousePoint
+
+                maybeXyPlaneMousePoint : Maybe (Point3d Meters Meters)
+                maybeXyPlaneMousePoint =
+                    Axis3d.intersectionWithPlane Plane3d.xy mouseAxis
+            in
+            case maybeXyPlaneMousePoint of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just xyPlaneMousePoint ->
+                    ( { model | location = xyPlaneMousePoint }, Cmd.none )
 
         KeyDown key ->
             ( { model | keysDown = Set.insert key model.keysDown }, Cmd.none )
@@ -86,40 +113,23 @@ update msg model =
             ( { model | keysDown = Set.remove key model.keysDown }, Cmd.none )
 
 
+getCamera : Model -> Camera3d Meters Meters
+getCamera model =
+    Camera3d.perspective
+        { viewpoint =
+            Viewpoint3d.orbit
+                { focalPoint = model.location
+                , groundPlane = SketchPlane3d.xy
+                , azimuth = model.cameraAngle
+                , elevation = Angle.degrees 30
+                , distance = Length.meters 30
+                }
+        , verticalFieldOfView = Angle.degrees 30
+        }
+
+
 view : Model -> Html msg
 view model =
-    let
-        camera : Camera3d.Camera3d Length.Meters coordinates
-        camera =
-            Camera3d.perspective
-                { viewpoint =
-                    Viewpoint3d.orbit
-                        { focalPoint = Point3d.meters 0 0 1
-                        , groundPlane = SketchPlane3d.xy
-                        , azimuth = model.cameraAngle
-                        , elevation = Angle.degrees 45
-                        , distance = Length.meters 30
-                        }
-                , verticalFieldOfView = Angle.degrees 30
-                }
-
-        screen : Rectangle2d.Rectangle2d Pixels.Pixels coordinates
-        screen =
-            Rectangle2d.with
-                { x1 = Pixels.pixels 0
-                , y1 = Pixels.pixels 600
-                , x2 = Pixels.pixels 800
-                , y2 = Pixels.pixels 0
-                }
-
-        mouseAxis : Axis3d.Axis3d Length.Meters coordinates
-        mouseAxis =
-            Camera3d.ray camera screen model.mousePoint
-
-        maybeXyPlaneMousePoint : Maybe (Point3d.Point3d Length.Meters coordinates)
-        maybeXyPlaneMousePoint =
-            Axis3d.intersectionWithPlane Plane3d.xy mouseAxis
-    in
     div []
         [ div
             [ style "border" "1px solid white"
@@ -127,19 +137,13 @@ view model =
             ]
             [ Scene3d.unlit
                 { entities =
-                    (case maybeXyPlaneMousePoint of
-                        Nothing ->
-                            viewSquare Point3d.origin
-
-                        Just xyPlaneMousePoint ->
-                            viewSquare xyPlaneMousePoint
-                    )
-                        :: [ viewSquare (Point3d.meters -5 5 0)
-                           , viewSquare (Point3d.meters -5 -5 0)
-                           , viewSquare (Point3d.meters 5 5 0)
-                           , viewSquare (Point3d.meters 5 -5 0)
-                           ]
-                , camera = camera
+                    [ viewSquare (Point3d.meters -5 5 0)
+                    , viewSquare (Point3d.meters -5 -5 0)
+                    , viewSquare (Point3d.meters 5 5 0)
+                    , viewSquare (Point3d.meters 5 -5 0)
+                    , viewSquare model.location
+                    ]
+                , camera = getCamera model
                 , clipDepth = Length.meters 1
                 , background = Scene3d.transparentBackground
                 , dimensions = ( Pixels.pixels 800, Pixels.pixels 600 )
@@ -158,7 +162,7 @@ viewSquare point =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ onAnimationFrame (\_ -> AnimationFrame)
         , onKeyDown (Decode.map KeyDown (Decode.field "key" Decode.string))
