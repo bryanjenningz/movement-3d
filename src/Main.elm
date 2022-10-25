@@ -100,7 +100,7 @@ update msg model =
                         |> (\path ->
                                 let
                                     minLength =
-                                        min 0.1 (Vector3d.length path |> Length.inMeters)
+                                        min 0.05 (Vector3d.length path |> Length.inMeters)
                                 in
                                 Vector3d.scaleTo (Length.meters minLength) path
                            )
@@ -129,7 +129,7 @@ update msg model =
                     | cameraAngle =
                         model.cameraAngle
                             |> Angle.inTurns
-                            |> (\turns -> turns - 0.01)
+                            |> (\turns -> turns - 0.005)
                             |> Angle.turns
                     , location = newLocation
                     , travelPath = newTravelPath
@@ -144,7 +144,7 @@ update msg model =
                     | cameraAngle =
                         model.cameraAngle
                             |> Angle.inTurns
-                            |> (\turns -> turns + 0.01)
+                            |> (\turns -> turns + 0.005)
                             |> Angle.turns
                     , location = newLocation
                     , travelPath = newTravelPath
