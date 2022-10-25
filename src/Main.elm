@@ -190,10 +190,9 @@ viewSquare point =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.batch
-        [ onAnimationFrame (\_ -> AnimationFrame)
-        , onKeyDown (Decode.map KeyDown (Decode.field "key" Decode.string))
+subscriptions model =
+    Sub.batch <|
+        [ onKeyDown (Decode.map KeyDown (Decode.field "key" Decode.string))
         , onKeyUp (Decode.map KeyUp (Decode.field "key" Decode.string))
         , onMouseDown
             (Decode.map2 (\x y -> MouseDown (Point2d.pixels x y))
@@ -201,6 +200,17 @@ subscriptions _ =
                 (Decode.field "clientY" Decode.float)
             )
         ]
+            ++ (if
+                    model.location
+                        /= model.destination
+                        || Set.member "ArrowLeft" model.keysDown
+                        || Set.member "ArrowRight" model.keysDown
+                then
+                    [ onAnimationFrame (\_ -> AnimationFrame) ]
+
+                else
+                    []
+               )
 
 
 main : Program () Model Msg
