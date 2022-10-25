@@ -29,6 +29,12 @@ type alias Model =
     , travelPath : List (Point3d Meters Meters)
     , cameraAngle : Angle.Angle
     , keysDown : Set String
+    , monsters : List Monster
+    }
+
+
+type alias Monster =
+    { location : Point3d Meters Meters
     }
 
 
@@ -38,6 +44,13 @@ init () =
       , travelPath = []
       , cameraAngle = Angle.turns 0
       , keysDown = Set.empty
+      , monsters =
+            [ Point3d.meters -3 3 0
+            , Point3d.meters -3 -3 0
+            , Point3d.meters 3 3 0
+            , Point3d.meters 3 -3 0
+            ]
+                |> List.map Monster
       }
     , Cmd.none
     )
@@ -212,12 +225,8 @@ view model =
             ]
             [ Scene3d.unlit
                 { entities =
-                    [ viewSquare (Point3d.meters -3 3 0)
-                    , viewSquare (Point3d.meters -3 -3 0)
-                    , viewSquare (Point3d.meters 3 3 0)
-                    , viewSquare (Point3d.meters 3 -3 0)
-                    , viewSquare model.location
-                    ]
+                    viewSquare model.location
+                        :: List.map (.location >> viewSquare) model.monsters
                 , camera = getCamera model
                 , clipDepth = Length.meters 1
                 , background = Scene3d.transparentBackground
