@@ -6,7 +6,7 @@ import Browser
 import Browser.Events exposing (onAnimationFrame, onKeyDown, onKeyUp, onMouseDown)
 import Camera3d exposing (Camera3d)
 import Color
-import Html exposing (Html, div, text)
+import Html exposing (Html, div)
 import Html.Attributes exposing (style)
 import Json.Decode as Decode
 import Length exposing (Meters)
@@ -25,6 +25,7 @@ import Viewpoint3d
 
 type alias Model =
     { location : Point3d Meters Meters
+    , destination : Point3d Meters Meters
     , cameraAngle : Angle.Angle
     , keysDown : Set String
     }
@@ -33,6 +34,7 @@ type alias Model =
 init : () -> ( Model, Cmd Msg )
 init () =
     ( { location = Point3d.meters 0 0 0
+      , destination = Point3d.meters 0 0 0
       , cameraAngle = Angle.turns 0
       , keysDown = Set.empty
       }
@@ -51,6 +53,25 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         AnimationFrame ->
+            let
+                newLocation : Point3d Meters Meters
+                newLocation =
+                    if model.destination == model.location then
+                        model.location
+
+                    else
+                        Vector3d.from model.location model.destination
+                            |> (\path ->
+                                    let
+                                        minLength =
+                                            min 0.2 (Vector3d.length path |> Length.inMeters)
+                                    in
+                                    Vector3d.scaleTo (Length.meters minLength) path
+                               )
+                            |> Vector3d.plus (Vector3d.from Point3d.origin model.location)
+                            |> Vector3d.toMeters
+                            |> Point3d.fromMeters
+            in
             if Set.member "ArrowLeft" model.keysDown then
                 ( { model
                     | cameraAngle =
@@ -58,6 +79,7 @@ update msg model =
                             |> Angle.inTurns
                             |> (\turns -> turns - 0.01)
                             |> Angle.turns
+                    , location = newLocation
                   }
                 , Cmd.none
                 )
@@ -69,12 +91,16 @@ update msg model =
                             |> Angle.inTurns
                             |> (\turns -> turns + 0.01)
                             |> Angle.turns
+                    , location = newLocation
                   }
                 , Cmd.none
                 )
 
-            else
+            else if newLocation == model.location then
                 ( model, Cmd.none )
+
+            else
+                ( { model | location = newLocation }, Cmd.none )
 
         MouseDown mousePoint ->
             let
@@ -104,7 +130,7 @@ update msg model =
                     ( model, Cmd.none )
 
                 Just xyPlaneMousePoint ->
-                    ( { model | location = xyPlaneMousePoint }, Cmd.none )
+                    ( { model | destination = xyPlaneMousePoint }, Cmd.none )
 
         KeyDown key ->
             ( { model | keysDown = Set.insert key model.keysDown }, Cmd.none )
