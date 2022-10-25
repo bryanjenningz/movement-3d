@@ -6,7 +6,7 @@ import Browser
 import Browser.Events exposing (onAnimationFrame, onKeyDown, onKeyUp, onMouseDown)
 import Camera3d exposing (Camera3d)
 import Color
-import Html exposing (Html, div)
+import Html exposing (Html, div, text)
 import Html.Attributes exposing (style)
 import Json.Decode as Decode
 import Length exposing (Meters)
@@ -175,6 +175,8 @@ view model =
                 , dimensions = ( Pixels.pixels 800, Pixels.pixels 600 )
                 }
             ]
+        , div [] [ text "Use left and right arrow keys to rotate the screen." ]
+        , div [] [ text "Click on the screen to move to that location." ]
         ]
 
 
