@@ -5,7 +5,7 @@ import Axis3d exposing (Axis3d)
 import Browser
 import Browser.Events exposing (onAnimationFrame, onKeyDown, onKeyUp, onMouseDown)
 import Camera3d exposing (Camera3d)
-import Color
+import Color exposing (Color)
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (style)
 import Json.Decode as Decode
@@ -26,6 +26,7 @@ import Viewpoint3d
 
 type alias Model =
     { location : Point3d Meters Meters
+    , state : State
     , travelPath : List (Point3d Meters Meters)
     , cameraAngle : Angle.Angle
     , keysDown : Set String
@@ -33,14 +34,22 @@ type alias Model =
     }
 
 
+type State
+    = Standing
+    | Attacking Monster
+    | Fighting Monster
+
+
 type alias Monster =
-    { location : Point3d Meters Meters
+    { id : Int
+    , location : Point3d Meters Meters
     }
 
 
 init : () -> ( Model, Cmd Msg )
 init () =
     ( { location = Point3d.meters 0 0 0
+      , state = Standing
       , travelPath = []
       , cameraAngle = Angle.turns 0
       , keysDown = Set.empty
@@ -50,7 +59,7 @@ init () =
             , Point3d.meters 3 3 0
             , Point3d.meters 3 -3 0
             ]
-                |> List.map Monster
+                |> List.indexedMap Monster
       }
     , Cmd.none
     )
@@ -98,6 +107,22 @@ update msg model =
                         |> Vector3d.plus (Vector3d.from Point3d.origin model.location)
                         |> Vector3d.toMeters
                         |> Point3d.fromMeters
+
+                newState =
+                    case ( newTravelPath, model.state ) of
+                        ( [], Attacking monster ) ->
+                            Fighting monster
+
+                        _ ->
+                            model.state
+
+                newMonsters =
+                    case newState of
+                        Fighting monster ->
+                            List.filter (.id >> (/=) monster.id) model.monsters
+
+                        _ ->
+                            model.monsters
             in
             if Set.member "ArrowLeft" model.keysDown then
                 ( { model
@@ -108,6 +133,8 @@ update msg model =
                             |> Angle.turns
                     , location = newLocation
                     , travelPath = newTravelPath
+                    , state = newState
+                    , monsters = newMonsters
                   }
                 , Cmd.none
                 )
@@ -121,12 +148,21 @@ update msg model =
                             |> Angle.turns
                     , location = newLocation
                     , travelPath = newTravelPath
+                    , state = newState
+                    , monsters = newMonsters
                   }
                 , Cmd.none
                 )
 
             else
-                ( { model | location = newLocation, travelPath = newTravelPath }, Cmd.none )
+                ( { model
+                    | location = newLocation
+                    , travelPath = newTravelPath
+                    , state = newState
+                    , monsters = newMonsters
+                  }
+                , Cmd.none
+                )
 
         MouseDown mousePoint ->
             let
@@ -157,7 +193,25 @@ update msg model =
                     ( model, Cmd.none )
 
                 Just destination ->
-                    ( { model | travelPath = shortestPath model.location destination }, Cmd.none )
+                    let
+                        attackingMonster =
+                            List.filter
+                                (\monster -> Point3d.equalWithin (Length.meters 0.01) destination monster.location)
+                                model.monsters
+                                |> List.head
+                    in
+                    ( { model
+                        | travelPath = shortestPath model.location destination
+                        , state =
+                            case attackingMonster of
+                                Just monster ->
+                                    Attacking monster
+
+                                Nothing ->
+                                    Standing
+                      }
+                    , Cmd.none
+                    )
 
         KeyDown key ->
             ( { model | keysDown = Set.insert key model.keysDown }, Cmd.none )
@@ -225,8 +279,8 @@ view model =
             ]
             [ Scene3d.unlit
                 { entities =
-                    viewSquare model.location
-                        :: List.map (.location >> viewSquare) model.monsters
+                    viewSquare (playerColor model.state) model.location
+                        :: List.map (.location >> viewSquare Color.darkGreen) model.monsters
                 , camera = getCamera model
                 , clipDepth = Length.meters 1
                 , background = Scene3d.transparentBackground
@@ -235,12 +289,26 @@ view model =
             ]
         , div [] [ text "Use left and right arrow keys to rotate the screen." ]
         , div [] [ text "Click on the screen to move to that location." ]
+        , div [] [ text "Click on a monster to attack it." ]
         ]
 
 
-viewSquare : Point3d.Point3d Length.Meters coordinates -> Scene3d.Entity coordinates
-viewSquare point =
-    Scene3d.quad (Material.color Color.blue)
+playerColor : State -> Color
+playerColor state =
+    case state of
+        Standing ->
+            Color.blue
+
+        Attacking _ ->
+            Color.darkBlue
+
+        Fighting _ ->
+            Color.darkRed
+
+
+viewSquare : Color -> Point3d.Point3d Length.Meters coordinates -> Scene3d.Entity coordinates
+viewSquare color point =
+    Scene3d.quad (Material.color color)
         (Point3d.translateBy (Vector3d.meters -0.5 -0.5 0) point)
         (Point3d.translateBy (Vector3d.meters 0.5 -0.5 0) point)
         (Point3d.translateBy (Vector3d.meters 0.5 0.5 0) point)
@@ -262,6 +330,13 @@ subscriptions model =
                     (not <| List.isEmpty model.travelPath)
                         || Set.member "ArrowLeft" model.keysDown
                         || Set.member "ArrowRight" model.keysDown
+                        || (case model.state of
+                                Fighting _ ->
+                                    True
+
+                                _ ->
+                                    False
+                           )
                 then
                     [ onAnimationFrame (\_ -> AnimationFrame) ]
 
