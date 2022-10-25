@@ -62,22 +62,31 @@ update msg model =
 
                         destination :: remainingPath ->
                             if model.location == destination then
-                                ( model.location, remainingPath )
+                                case remainingPath of
+                                    [] ->
+                                        ( model.location, [] )
+
+                                    destination2 :: remainingPath2 ->
+                                        ( calculateNewLocation destination2, remainingPath )
 
                             else
-                                ( Vector3d.from model.location destination
-                                    |> (\path ->
-                                            let
-                                                minLength =
-                                                    min 0.1 (Vector3d.length path |> Length.inMeters)
-                                            in
-                                            Vector3d.scaleTo (Length.meters minLength) path
-                                       )
-                                    |> Vector3d.plus (Vector3d.from Point3d.origin model.location)
-                                    |> Vector3d.toMeters
-                                    |> Point3d.fromMeters
+                                ( calculateNewLocation destination
                                 , model.travelPath
                                 )
+
+                calculateNewLocation : Point3d Meters Meters -> Point3d Meters Meters
+                calculateNewLocation destination =
+                    Vector3d.from model.location destination
+                        |> (\path ->
+                                let
+                                    minLength =
+                                        min 0.1 (Vector3d.length path |> Length.inMeters)
+                                in
+                                Vector3d.scaleTo (Length.meters minLength) path
+                           )
+                        |> Vector3d.plus (Vector3d.from Point3d.origin model.location)
+                        |> Vector3d.toMeters
+                        |> Point3d.fromMeters
             in
             if Set.member "ArrowLeft" model.keysDown then
                 ( { model
