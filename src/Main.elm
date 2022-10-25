@@ -14,6 +14,7 @@ import Pixels exposing (Pixels)
 import Plane3d
 import Point2d exposing (Point2d)
 import Point3d exposing (Point3d)
+import Quantity
 import Rectangle2d exposing (Rectangle2d)
 import Scene3d
 import Scene3d.Material as Material
@@ -25,7 +26,7 @@ import Viewpoint3d
 
 type alias Model =
     { location : Point3d Meters Meters
-    , destination : Point3d Meters Meters
+    , travelPath : List (Point3d Meters Meters)
     , cameraAngle : Angle.Angle
     , keysDown : Set String
     }
@@ -34,7 +35,7 @@ type alias Model =
 init : () -> ( Model, Cmd Msg )
 init () =
     ( { location = Point3d.meters 0 0 0
-      , destination = Point3d.meters 0 0 0
+      , travelPath = []
       , cameraAngle = Angle.turns 0
       , keysDown = Set.empty
       }
@@ -54,23 +55,29 @@ update msg model =
     case msg of
         AnimationFrame ->
             let
-                newLocation : Point3d Meters Meters
-                newLocation =
-                    if model.destination == model.location then
-                        model.location
+                ( newLocation, newTravelPath ) =
+                    case model.travelPath of
+                        [] ->
+                            ( model.location, model.travelPath )
 
-                    else
-                        Vector3d.from model.location model.destination
-                            |> (\path ->
-                                    let
-                                        minLength =
-                                            min 0.1 (Vector3d.length path |> Length.inMeters)
-                                    in
-                                    Vector3d.scaleTo (Length.meters minLength) path
-                               )
-                            |> Vector3d.plus (Vector3d.from Point3d.origin model.location)
-                            |> Vector3d.toMeters
-                            |> Point3d.fromMeters
+                        destination :: remainingPath ->
+                            if model.location == destination then
+                                ( model.location, remainingPath )
+
+                            else
+                                ( Vector3d.from model.location destination
+                                    |> (\path ->
+                                            let
+                                                minLength =
+                                                    min 0.1 (Vector3d.length path |> Length.inMeters)
+                                            in
+                                            Vector3d.scaleTo (Length.meters minLength) path
+                                       )
+                                    |> Vector3d.plus (Vector3d.from Point3d.origin model.location)
+                                    |> Vector3d.toMeters
+                                    |> Point3d.fromMeters
+                                , model.travelPath
+                                )
             in
             if Set.member "ArrowLeft" model.keysDown then
                 ( { model
@@ -80,6 +87,7 @@ update msg model =
                             |> (\turns -> turns - 0.01)
                             |> Angle.turns
                     , location = newLocation
+                    , travelPath = newTravelPath
                   }
                 , Cmd.none
                 )
@@ -92,15 +100,13 @@ update msg model =
                             |> (\turns -> turns + 0.01)
                             |> Angle.turns
                     , location = newLocation
+                    , travelPath = newTravelPath
                   }
                 , Cmd.none
                 )
 
-            else if newLocation == model.location then
-                ( model, Cmd.none )
-
             else
-                ( { model | location = newLocation }, Cmd.none )
+                ( { model | location = newLocation, travelPath = newTravelPath }, Cmd.none )
 
         MouseDown mousePoint ->
             let
@@ -130,14 +136,41 @@ update msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
-                Just xyPlaneMousePoint ->
-                    ( { model | destination = xyPlaneMousePoint }, Cmd.none )
+                Just destination ->
+                    ( { model | travelPath = shortestPath model.location destination }, Cmd.none )
 
         KeyDown key ->
             ( { model | keysDown = Set.insert key model.keysDown }, Cmd.none )
 
         KeyUp key ->
             ( { model | keysDown = Set.remove key model.keysDown }, Cmd.none )
+
+
+shortestPath : Point3d Meters coordinates -> Point3d Meters coordinates -> List (Point3d Meters coordinates)
+shortestPath start destination =
+    if start == destination then
+        []
+
+    else
+        let
+            xDiff =
+                (destination |> Point3d.toMeters |> .x)
+                    - (start |> Point3d.toMeters |> .x)
+                    |> clamp -1 1
+
+            yDiff =
+                (destination |> Point3d.toMeters |> .y)
+                    - (start |> Point3d.toMeters |> .y)
+                    |> clamp -1 1
+
+            newStart =
+                Vector3d.plus
+                    (Vector3d.from Point3d.origin (Point3d.meters xDiff yDiff 0))
+                    (Vector3d.from Point3d.origin start)
+                    |> Vector3d.toMeters
+                    |> Point3d.fromMeters
+        in
+        newStart :: shortestPath newStart destination
 
 
 getCamera : Model -> Camera3d Meters Meters
@@ -210,8 +243,7 @@ subscriptions model =
             )
         ]
             ++ (if
-                    model.location
-                        /= model.destination
+                    (not <| List.isEmpty model.travelPath)
                         || Set.member "ArrowLeft" model.keysDown
                         || Set.member "ArrowRight" model.keysDown
                 then
