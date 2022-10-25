@@ -66,13 +66,11 @@ update msg model =
                                     [] ->
                                         ( model.location, [] )
 
-                                    destination2 :: remainingPath2 ->
+                                    destination2 :: _ ->
                                         ( calculateNewLocation destination2, remainingPath )
 
                             else
-                                ( calculateNewLocation destination
-                                , model.travelPath
-                                )
+                                ( calculateNewLocation destination, model.travelPath )
 
                 calculateNewLocation : Point3d Meters Meters -> Point3d Meters Meters
                 calculateNewLocation destination =
