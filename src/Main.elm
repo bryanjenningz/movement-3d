@@ -64,7 +64,7 @@ update msg model =
                             |> (\path ->
                                     let
                                         minLength =
-                                            min 0.2 (Vector3d.length path |> Length.inMeters)
+                                            min 0.1 (Vector3d.length path |> Length.inMeters)
                                     in
                                     Vector3d.scaleTo (Length.meters minLength) path
                                )
@@ -124,6 +124,7 @@ update msg model =
                 maybeXyPlaneMousePoint : Maybe (Point3d Meters Meters)
                 maybeXyPlaneMousePoint =
                     Axis3d.intersectionWithPlane Plane3d.xy mouseAxis
+                        |> Maybe.map (mapPoint (round >> toFloat))
             in
             case maybeXyPlaneMousePoint of
                 Nothing ->
@@ -148,10 +149,18 @@ getCamera model =
                 , groundPlane = SketchPlane3d.xy
                 , azimuth = model.cameraAngle
                 , elevation = Angle.degrees 30
-                , distance = Length.meters 30
+                , distance = Length.meters 15
                 }
         , verticalFieldOfView = Angle.degrees 30
         }
+
+
+mapPoint : (Float -> Float) -> Point3d Meters coordinates -> Point3d Meters coordinates
+mapPoint f point =
+    point
+        |> Point3d.toMeters
+        |> (\{ x, y, z } -> { x = f x, y = f y, z = f z })
+        |> Point3d.fromMeters
 
 
 view : Model -> Html msg
@@ -163,10 +172,10 @@ view model =
             ]
             [ Scene3d.unlit
                 { entities =
-                    [ viewSquare (Point3d.meters -5 5 0)
-                    , viewSquare (Point3d.meters -5 -5 0)
-                    , viewSquare (Point3d.meters 5 5 0)
-                    , viewSquare (Point3d.meters 5 -5 0)
+                    [ viewSquare (Point3d.meters -3 3 0)
+                    , viewSquare (Point3d.meters -3 -3 0)
+                    , viewSquare (Point3d.meters 3 3 0)
+                    , viewSquare (Point3d.meters 3 -3 0)
                     , viewSquare model.location
                     ]
                 , camera = getCamera model
@@ -183,10 +192,10 @@ view model =
 viewSquare : Point3d.Point3d Length.Meters coordinates -> Scene3d.Entity coordinates
 viewSquare point =
     Scene3d.quad (Material.color Color.blue)
-        (Point3d.translateBy (Vector3d.meters -1 -1 0) point)
-        (Point3d.translateBy (Vector3d.meters 1 -1 0) point)
-        (Point3d.translateBy (Vector3d.meters 1 1 0) point)
-        (Point3d.translateBy (Vector3d.meters -1 1 0) point)
+        (Point3d.translateBy (Vector3d.meters -0.5 -0.5 0) point)
+        (Point3d.translateBy (Vector3d.meters 0.5 -0.5 0) point)
+        (Point3d.translateBy (Vector3d.meters 0.5 0.5 0) point)
+        (Point3d.translateBy (Vector3d.meters -0.5 0.5 0) point)
 
 
 subscriptions : Model -> Sub Msg
