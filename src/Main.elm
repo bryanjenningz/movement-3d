@@ -78,7 +78,7 @@ type Msg
     | MouseDown (Point2d Pixels Meters)
     | KeyDown String
     | KeyUp String
-    | GenerateAttackRound Monster
+    | GenerateAttackRound
     | AttackRound Int Int
 
 
@@ -216,7 +216,7 @@ update msg model =
         KeyUp key ->
             ( { model | keysDown = Set.remove key model.keysDown }, Cmd.none )
 
-        GenerateAttackRound monster ->
+        GenerateAttackRound ->
             ( model, generateAttackRound )
 
         AttackRound playerDamage monsterDamage ->
@@ -458,8 +458,8 @@ subscriptions model =
                     []
                )
             ++ (case model.state of
-                    Fighting monster ->
-                        [ Time.every 1000 (\_ -> GenerateAttackRound monster) ]
+                    Fighting _ ->
+                        [ Time.every 1000 (\_ -> GenerateAttackRound) ]
 
                     _ ->
                         []
