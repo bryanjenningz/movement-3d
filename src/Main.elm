@@ -1,6 +1,6 @@
 module Main exposing (AttackStyle(..), Model, Monster, Msg(..), State(..), getCamera, init, main, screen, update)
 
-import Angle
+import Angle exposing (Angle)
 import Axis3d exposing (Axis3d)
 import Browser
 import Browser.Events exposing (onAnimationFrame, onKeyDown, onKeyUp, onMouseDown)
@@ -34,7 +34,7 @@ type alias Model =
     , maxHealth : Int
     , hits : List Hit
     , travelPath : List (Point3d Meters Meters)
-    , cameraAngle : Angle.Angle
+    , cameraAngle : Angle
     , keysDown : Set String
     , monsters : List Monster
     , now : Int
@@ -196,24 +196,16 @@ applyAnimationFrame time model =
 
         rotationSpeed =
             0.005
+
+        turnAngle : Float -> Angle -> Angle
+        turnAngle turn angle =
+            angle |> Angle.inTurns |> (+) turn |> Angle.turns
     in
     if Set.member "ArrowLeft" model.keysDown then
-        { newModel
-            | cameraAngle =
-                model.cameraAngle
-                    |> Angle.inTurns
-                    |> (\turns -> turns - rotationSpeed)
-                    |> Angle.turns
-        }
+        { newModel | cameraAngle = turnAngle -rotationSpeed model.cameraAngle }
 
     else if Set.member "ArrowRight" model.keysDown then
-        { newModel
-            | cameraAngle =
-                model.cameraAngle
-                    |> Angle.inTurns
-                    |> (\turns -> turns + rotationSpeed)
-                    |> Angle.turns
-        }
+        { newModel | cameraAngle = turnAngle rotationSpeed model.cameraAngle }
 
     else
         newModel
