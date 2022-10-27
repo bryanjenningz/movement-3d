@@ -22,15 +22,17 @@ init =
                       , state = Main.Standing
                       , health = 10
                       , maxHealth = 10
+                      , hits = []
                       , travelPath = []
                       , cameraAngle = Angle.turns 0
                       , keysDown = Set.empty
                       , monsters =
-                            [ { health = 3, id = 0, location = Point3d.fromMeters { x = -3, y = 3, z = 0 }, maxHealth = 3 }
-                            , { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3 }
-                            , { health = 3, id = 2, location = Point3d.fromMeters { x = 3, y = 3, z = 0 }, maxHealth = 3 }
-                            , { health = 3, id = 3, location = Point3d.fromMeters { x = 3, y = -3, z = 0 }, maxHealth = 3 }
+                            [ { health = 3, id = 0, location = Point3d.fromMeters { x = -3, y = 3, z = 0 }, maxHealth = 3, hits = [] }
+                            , { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3, hits = [] }
+                            , { health = 3, id = 2, location = Point3d.fromMeters { x = 3, y = 3, z = 0 }, maxHealth = 3, hits = [] }
+                            , { health = 3, id = 3, location = Point3d.fromMeters { x = 3, y = -3, z = 0 }, maxHealth = 3, hits = [] }
                             ]
+                      , now = -1
                       }
                     , Cmd.none
                     )
@@ -72,7 +74,7 @@ mouseDown =
                             ]
                         , state =
                             Main.Attacking
-                                { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3 }
+                                { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3, hits = [] }
                       }
                     , Cmd.none
                     )
@@ -89,7 +91,7 @@ mouseDown =
                     ( { modelRightNextToMonster
                         | state =
                             Main.Attacking
-                                { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3 }
+                                { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3, hits = [] }
                       }
                     , Cmd.none
                     )
@@ -106,12 +108,13 @@ animationFrame =
                         { initialModel
                             | location = Point3d.fromMeters { x = -3, y = -2, z = 0 }
                             , state = Main.Attacking attackingMonster
+                            , now = 0
                         }
 
                     attackingMonster =
-                        { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3 }
+                        { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3, hits = [] }
                 in
-                Expect.equal (Main.update Main.AnimationFrame attackingModel)
+                Expect.equal (Main.update (Main.AnimationFrame 0) attackingModel)
                     ( { attackingModel | state = Main.Fighting attackingMonster }, Cmd.none )
         , test "Nothing changes when state is Fighting" <|
             \_ ->
@@ -120,11 +123,12 @@ animationFrame =
                         { initialModel
                             | location = Point3d.fromMeters { x = -3, y = -2, z = 0 }
                             , state = Main.Fighting attackingMonster
+                            , now = 0
                         }
 
                     attackingMonster =
-                        { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3 }
+                        { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3, hits = [] }
                 in
-                Expect.equal (Main.update Main.AnimationFrame attackingModel)
+                Expect.equal (Main.update (Main.AnimationFrame 0) attackingModel)
                     ( attackingModel, Cmd.none )
         ]

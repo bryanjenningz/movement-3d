@@ -31,10 +31,12 @@ type alias Model =
     , state : State
     , health : Int
     , maxHealth : Int
+    , hits : List Hit
     , travelPath : List (Point3d Meters Meters)
     , cameraAngle : Angle.Angle
     , keysDown : Set String
     , monsters : List Monster
+    , now : Int
     }
 
 
@@ -44,11 +46,18 @@ type State
     | Fighting Monster
 
 
+type alias Hit =
+    { amount : Int
+    , disappearTime : Int
+    }
+
+
 type alias Monster =
     { id : Int
     , location : Point3d Meters Meters
     , health : Int
     , maxHealth : Int
+    , hits : List Hit
     }
 
 
@@ -58,6 +67,7 @@ init () =
       , state = Standing
       , health = 10
       , maxHealth = 10
+      , hits = []
       , travelPath = []
       , cameraAngle = Angle.turns 0
       , keysDown = Set.empty
@@ -67,14 +77,15 @@ init () =
             , Point3d.meters 3 3 0
             , Point3d.meters 3 -3 0
             ]
-                |> List.indexedMap (\id monster -> Monster id monster 3 3)
+                |> List.indexedMap (\id monster -> Monster id monster 3 3 [])
+      , now = -1
       }
     , Cmd.none
     )
 
 
 type Msg
-    = AnimationFrame
+    = AnimationFrame Int
     | MouseDown (Point2d Pixels Meters)
     | KeyDown String
     | KeyUp String
@@ -85,7 +96,7 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        AnimationFrame ->
+        AnimationFrame time ->
             let
                 ( newLocation, newTravelPath ) =
                     case model.travelPath of
@@ -125,6 +136,14 @@ update msg model =
 
                         _ ->
                             model.state
+
+                newHits =
+                    List.filter (\hit -> hit.disappearTime > time) model.hits
+
+                newMonsters =
+                    List.map
+                        (\monster -> { monster | hits = List.filter (\hit -> hit.disappearTime > time) monster.hits })
+                        model.monsters
             in
             if Set.member "ArrowLeft" model.keysDown then
                 ( { model
@@ -136,6 +155,9 @@ update msg model =
                     , location = newLocation
                     , travelPath = newTravelPath
                     , state = newState
+                    , hits = newHits
+                    , monsters = newMonsters
+                    , now = time
                   }
                 , Cmd.none
                 )
@@ -150,6 +172,9 @@ update msg model =
                     , location = newLocation
                     , travelPath = newTravelPath
                     , state = newState
+                    , hits = newHits
+                    , monsters = newMonsters
+                    , now = time
                   }
                 , Cmd.none
                 )
@@ -159,6 +184,9 @@ update msg model =
                     | location = newLocation
                     , travelPath = newTravelPath
                     , state = newState
+                    , hits = newHits
+                    , monsters = newMonsters
+                    , now = time
                   }
                 , Cmd.none
                 )
@@ -235,15 +263,36 @@ update msg model =
                                             Nothing
 
                                         else
-                                            Just { monster | health = newHealth }
+                                            Just
+                                                { monster
+                                                    | health = newHealth
+                                                    , hits =
+                                                        { amount = monsterDamage
+                                                        , disappearTime = disappearTime
+                                                        }
+                                                            :: monster.hits
+                                                }
 
                                     else
                                         Just monster
                                 )
                                 model.monsters
+
+                        disappearTime =
+                            model.now + 500
                     in
                     ( { model
                         | health = max 1 (model.health - playerDamage)
+                        , hits =
+                            { amount =
+                                if model.health == 1 then
+                                    0
+
+                                else
+                                    playerDamage
+                            , disappearTime = disappearTime
+                            }
+                                :: model.hits
                         , monsters = newMonsters
                         , state =
                             case List.filter (\monster -> monster.id == fightingMonster.id) newMonsters |> List.head of
@@ -354,11 +403,49 @@ view model =
                 model.health
                 model.maxHealth
                 model.location
+            , viewHits (getCamera model) model.hits model.location
+            , div []
+                (List.map (\monster -> viewHits (getCamera model) monster.hits monster.location) model.monsters)
             ]
         , div [] [ text "Use left and right arrow keys to rotate the screen." ]
         , div [] [ text "Click on the screen to move to that location." ]
         , div [] [ text "Click on a monster to attack it." ]
         ]
+
+
+viewHits : Camera3d Meters Meters -> List Hit -> Point3d Meters Meters -> Html msg
+viewHits camera hits point =
+    let
+        { x, y } =
+            Point3d.Projection.toScreenSpace
+                camera
+                screen
+                point
+                |> Point2d.toPixels
+
+        width =
+            30
+    in
+    case List.head hits of
+        Nothing ->
+            text ""
+
+        Just { amount } ->
+            div
+                [ style "position" "absolute"
+                , style "left" (String.fromFloat (x - width / 2) ++ "px")
+                , style "top" (String.fromFloat (y - width / 2) ++ "px")
+                , style "width" (String.fromFloat width ++ "px")
+                , style "height" (String.fromFloat width ++ "px")
+                , style "background-color" "#d33030"
+                , style "color" "white"
+                , style "display" "flex"
+                , style "justify-content" "center"
+                , style "align-items" "center"
+                , style "border-radius" "100%"
+                , style "font-weight" "bold"
+                ]
+                [ div [] [ text (String.fromInt amount) ] ]
 
 
 movePoint : Vector3d Meters Meters -> Point3d Meters Meters -> Point3d Meters Meters
@@ -454,8 +541,9 @@ subscriptions model =
                                 Standing ->
                                     False
                            )
+                        || (List.length model.hits > 0)
                 then
-                    [ onAnimationFrame (\_ -> AnimationFrame) ]
+                    [ onAnimationFrame (Time.posixToMillis >> AnimationFrame) ]
 
                 else
                     []
