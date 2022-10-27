@@ -413,6 +413,11 @@ view model =
         ]
 
 
+redDamage : String
+redDamage =
+    "#d33030"
+
+
 viewHits : Camera3d Meters Meters -> List Hit -> Point3d Meters Meters -> Html msg
 viewHits camera hits point =
     let
@@ -437,7 +442,7 @@ viewHits camera hits point =
                 , style "top" (String.fromFloat (y - width / 2) ++ "px")
                 , style "width" (String.fromFloat width ++ "px")
                 , style "height" (String.fromFloat width ++ "px")
-                , style "background-color" "#d33030"
+                , style "background-color" redDamage
                 , style "color" "white"
                 , style "display" "flex"
                 , style "justify-content" "center"
@@ -502,7 +507,7 @@ viewHealthBar camera health maxHealth point =
         , style "top" (String.fromFloat healthBarLocation.y ++ "px")
         , style "width" (String.fromFloat healthBarWidth ++ "px")
         , style "height" (String.fromFloat healthBarHeight ++ "px")
-        , style "background-color" "red"
+        , style "background-color" redDamage
         ]
         [ div
             [ style "position" "absolute"
