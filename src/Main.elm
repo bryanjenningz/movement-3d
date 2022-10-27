@@ -445,10 +445,13 @@ subscriptions model =
                         || Set.member "ArrowLeft" model.keysDown
                         || Set.member "ArrowRight" model.keysDown
                         || (case model.state of
+                                Attacking _ ->
+                                    True
+
                                 Fighting _ ->
                                     True
 
-                                _ ->
+                                Standing ->
                                     False
                            )
                 then

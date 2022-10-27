@@ -1,7 +1,6 @@
 module MainTests exposing (..)
 
 import Angle
-import Camera3d exposing (Camera3d)
 import Expect
 import Length exposing (Meters)
 import Main
@@ -9,7 +8,6 @@ import Pixels exposing (Pixels)
 import Point2d exposing (Point2d)
 import Point3d exposing (Point3d)
 import Point3d.Projection
-import Rectangle2d exposing (Rectangle2d)
 import Set
 import Test exposing (Test, describe, test)
 
