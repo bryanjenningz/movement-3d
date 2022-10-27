@@ -1,10 +1,15 @@
 module MainTests exposing (..)
 
 import Angle
+import Camera3d exposing (Camera3d)
 import Expect
+import Length exposing (Meters)
 import Main
-import Point2d
-import Point3d
+import Pixels exposing (Pixels)
+import Point2d exposing (Point2d)
+import Point3d exposing (Point3d)
+import Point3d.Projection
+import Rectangle2d exposing (Rectangle2d)
 import Set
 import Test exposing (Test, describe, test)
 
@@ -39,6 +44,11 @@ initialModel =
     Main.init () |> Tuple.first
 
 
+toMousePoint : Main.Model -> Point3d Meters Meters -> Point2d Pixels Meters
+toMousePoint model point =
+    Point3d.Projection.toScreenSpace (Main.getCamera model) Main.screen point
+
+
 mouseDown : Test
 mouseDown =
     describe "MouseDown msg"
@@ -63,6 +73,23 @@ mouseDown =
                             , Point3d.fromMeters { x = -2, y = -2, z = 0 }
                             ]
                         , state =
+                            Main.Attacking
+                                { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3 }
+                      }
+                    , Cmd.none
+                    )
+        , test "Gives an Attacking state when you click on a monster right next to you" <|
+            \_ ->
+                let
+                    modelRightNextToMonster =
+                        { initialModel | location = Point3d.fromMeters { x = -3, y = -2, z = 0 } }
+
+                    mousePoint =
+                        toMousePoint modelRightNextToMonster (Point3d.fromMeters { x = -3, y = -3, z = 0 })
+                in
+                Expect.equal (Main.update (Main.MouseDown mousePoint) modelRightNextToMonster)
+                    ( { modelRightNextToMonster
+                        | state =
                             Main.Attacking
                                 { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3 }
                       }
