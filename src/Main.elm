@@ -113,153 +113,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         AnimationFrame time ->
-            let
-                ( newLocation, newTravelPath ) =
-                    case model.travelPath of
-                        [] ->
-                            ( model.location, model.travelPath )
-
-                        destination :: remainingPath ->
-                            if model.location == destination then
-                                case remainingPath of
-                                    [] ->
-                                        ( model.location, [] )
-
-                                    destination2 :: _ ->
-                                        ( calculateNewLocation destination2, remainingPath )
-
-                            else
-                                ( calculateNewLocation destination, model.travelPath )
-
-                calculateNewLocation : Point3d Meters Meters -> Point3d Meters Meters
-                calculateNewLocation destination =
-                    Vector3d.from model.location destination
-                        |> (\path ->
-                                let
-                                    minLength =
-                                        min 0.05 (Vector3d.length path |> Length.inMeters)
-                                in
-                                Vector3d.scaleTo (Length.meters minLength) path
-                           )
-                        |> Vector3d.plus (Vector3d.from Point3d.origin model.location)
-                        |> Vector3d.toMeters
-                        |> Point3d.fromMeters
-
-                newState =
-                    case ( newTravelPath, model.state ) of
-                        ( [], Attacking monster ) ->
-                            Fighting monster
-
-                        _ ->
-                            model.state
-
-                newHits =
-                    List.filter (\hit -> hit.disappearTime > time) model.hits
-
-                newMonsters =
-                    List.map
-                        (\monster -> { monster | hits = List.filter (\hit -> hit.disappearTime > time) monster.hits })
-                        model.monsters
-            in
-            if Set.member "ArrowLeft" model.keysDown then
-                ( { model
-                    | cameraAngle =
-                        model.cameraAngle
-                            |> Angle.inTurns
-                            |> (\turns -> turns - 0.005)
-                            |> Angle.turns
-                    , location = newLocation
-                    , travelPath = newTravelPath
-                    , state = newState
-                    , hits = newHits
-                    , monsters = newMonsters
-                    , now = time
-                  }
-                , Cmd.none
-                )
-
-            else if Set.member "ArrowRight" model.keysDown then
-                ( { model
-                    | cameraAngle =
-                        model.cameraAngle
-                            |> Angle.inTurns
-                            |> (\turns -> turns + 0.005)
-                            |> Angle.turns
-                    , location = newLocation
-                    , travelPath = newTravelPath
-                    , state = newState
-                    , hits = newHits
-                    , monsters = newMonsters
-                    , now = time
-                  }
-                , Cmd.none
-                )
-
-            else
-                ( { model
-                    | location = newLocation
-                    , travelPath = newTravelPath
-                    , state = newState
-                    , hits = newHits
-                    , monsters = newMonsters
-                    , now = time
-                  }
-                , Cmd.none
-                )
+            ( applyAnimationFrame time model, Cmd.none )
 
         MouseDown mousePoint ->
-            let
-                camera : Camera3d Meters Meters
-                camera =
-                    getCamera model
-
-                mouseAxis : Axis3d Meters Meters
-                mouseAxis =
-                    Camera3d.ray camera screen mousePoint
-
-                maybeXyPlaneMousePoint : Maybe (Point3d Meters Meters)
-                maybeXyPlaneMousePoint =
-                    Axis3d.intersectionWithPlane Plane3d.xy mouseAxis
-                        |> Maybe.map (mapPoint (round >> toFloat))
-            in
-            if
-                ((Point2d.toPixels mousePoint |> .x) > 800)
-                    || ((Point2d.toPixels mousePoint |> .y) > 600)
-            then
-                ( model, Cmd.none )
-
-            else
-                case maybeXyPlaneMousePoint of
-                    Nothing ->
-                        ( model, Cmd.none )
-
-                    Just destination ->
-                        let
-                            attackingMonster =
-                                List.filter
-                                    (\monster -> Point3d.equalWithin (Length.meters 0.01) destination monster.location)
-                                    model.monsters
-                                    |> List.head
-                        in
-                        case attackingMonster of
-                            Just monster ->
-                                ( { model
-                                    | travelPath =
-                                        shortestPath model.location destination
-                                            -- Don't go directly on the monster when you're attacking the monster
-                                            |> List.filter (\point -> point /= destination)
-                                    , state = Attacking monster
-                                  }
-                                , Cmd.none
-                                )
-
-                            Nothing ->
-                                ( { model
-                                    | travelPath = shortestPath model.location destination
-                                    , state = Standing
-                                  }
-                                , Cmd.none
-                                )
+            ( applyMouseDown mousePoint model, Cmd.none )
 
         KeyDown key ->
             ( { model | keysDown = Set.insert key model.keysDown }, Cmd.none )
@@ -271,86 +128,222 @@ update msg model =
             ( model, generateAttackRound )
 
         AttackRound playerDamage monsterDamage ->
-            case model.state of
-                Fighting fightingMonster ->
-                    let
-                        newMonsters =
-                            List.filterMap
-                                (\monster ->
-                                    if monster.id == fightingMonster.id then
-                                        let
-                                            newHealth =
-                                                monster.health - monsterDamage
-                                        in
-                                        if newHealth <= 0 then
-                                            Nothing
-
-                                        else
-                                            Just
-                                                { monster
-                                                    | health = newHealth
-                                                    , hits =
-                                                        { amount = monsterDamage
-                                                        , disappearTime = disappearTime
-                                                        }
-                                                            :: monster.hits
-                                                }
-
-                                    else
-                                        Just monster
-                                )
-                                model.monsters
-
-                        disappearTime =
-                            model.now + 500
-                    in
-                    ( { model
-                        | health = max 1 (model.health - playerDamage)
-                        , hits =
-                            { amount =
-                                if model.health == 1 then
-                                    0
-
-                                else
-                                    playerDamage
-                            , disappearTime = disappearTime
-                            }
-                                :: model.hits
-                        , monsters = newMonsters
-                        , state =
-                            case List.filter (\monster -> monster.id == fightingMonster.id) newMonsters |> List.head of
-                                Nothing ->
-                                    Standing
-
-                                Just newFightingMonster ->
-                                    Fighting newFightingMonster
-                        , accuracyXp =
-                            if model.attackStyle == AccuracyStyle then
-                                model.accuracyXp + monsterDamage
-
-                            else
-                                model.accuracyXp
-                        , strengthXp =
-                            if model.attackStyle == StrengthStyle then
-                                model.strengthXp + monsterDamage
-
-                            else
-                                model.strengthXp
-                        , defenseXp =
-                            if model.attackStyle == DefenseStyle then
-                                model.defenseXp + monsterDamage
-
-                            else
-                                model.defenseXp
-                      }
-                    , Cmd.none
-                    )
-
-                _ ->
-                    ( model, Cmd.none )
+            ( applyAttackRound playerDamage monsterDamage model, Cmd.none )
 
         SetAttackStyle attackStyle ->
             ( { model | attackStyle = attackStyle }, Cmd.none )
+
+
+applyAnimationFrame : Int -> Model -> Model
+applyAnimationFrame time model =
+    let
+        ( newLocation, newTravelPath ) =
+            case model.travelPath of
+                [] ->
+                    ( model.location, model.travelPath )
+
+                destination :: remainingPath ->
+                    if model.location == destination then
+                        case remainingPath of
+                            [] ->
+                                ( model.location, [] )
+
+                            destination2 :: _ ->
+                                ( calculateNewLocation destination2, remainingPath )
+
+                    else
+                        ( calculateNewLocation destination, model.travelPath )
+
+        calculateNewLocation : Point3d Meters Meters -> Point3d Meters Meters
+        calculateNewLocation destination =
+            Vector3d.from model.location destination
+                |> (\path ->
+                        let
+                            minLength =
+                                min 0.05 (Vector3d.length path |> Length.inMeters)
+                        in
+                        Vector3d.scaleTo (Length.meters minLength) path
+                   )
+                |> Vector3d.plus (Vector3d.from Point3d.origin model.location)
+                |> Vector3d.toMeters
+                |> Point3d.fromMeters
+
+        newState =
+            case ( newTravelPath, model.state ) of
+                ( [], Attacking monster ) ->
+                    Fighting monster
+
+                _ ->
+                    model.state
+
+        newHits =
+            List.filter (\hit -> hit.disappearTime > time) model.hits
+
+        newMonsters =
+            List.map
+                (\monster -> { monster | hits = List.filter (\hit -> hit.disappearTime > time) monster.hits })
+                model.monsters
+
+        newModel =
+            { model
+                | location = newLocation
+                , travelPath = newTravelPath
+                , state = newState
+                , hits = newHits
+                , monsters = newMonsters
+                , now = time
+            }
+
+        rotationSpeed =
+            0.005
+    in
+    if Set.member "ArrowLeft" model.keysDown then
+        { newModel
+            | cameraAngle =
+                model.cameraAngle
+                    |> Angle.inTurns
+                    |> (\turns -> turns - rotationSpeed)
+                    |> Angle.turns
+        }
+
+    else if Set.member "ArrowRight" model.keysDown then
+        { newModel
+            | cameraAngle =
+                model.cameraAngle
+                    |> Angle.inTurns
+                    |> (\turns -> turns + rotationSpeed)
+                    |> Angle.turns
+        }
+
+    else
+        newModel
+
+
+applyMouseDown : Point2d Pixels Meters -> Model -> Model
+applyMouseDown mousePoint model =
+    let
+        mouseAxis : Axis3d Meters Meters
+        mouseAxis =
+            Camera3d.ray (getCamera model) screen mousePoint
+
+        mousePointXyPlane : Maybe (Point3d Meters Meters)
+        mousePointXyPlane =
+            Axis3d.intersectionWithPlane Plane3d.xy mouseAxis
+                |> Maybe.map (mapPoint (round >> toFloat))
+    in
+    if
+        ((Point2d.toPixels mousePoint |> .x) > screenWidth)
+            || ((Point2d.toPixels mousePoint |> .y) > screenHeight)
+    then
+        model
+
+    else
+        case mousePointXyPlane of
+            Nothing ->
+                model
+
+            Just destination ->
+                let
+                    attackingMonster =
+                        List.filter
+                            (\monster -> Point3d.equalWithin (Length.meters 0.01) destination monster.location)
+                            model.monsters
+                            |> List.head
+                in
+                case attackingMonster of
+                    Just monster ->
+                        { model
+                            | travelPath =
+                                shortestPath model.location destination
+                                    -- Don't go directly on the monster when you're attacking the monster
+                                    |> List.filter (\point -> point /= destination)
+                            , state = Attacking monster
+                        }
+
+                    Nothing ->
+                        { model
+                            | travelPath = shortestPath model.location destination
+                            , state = Standing
+                        }
+
+
+applyAttackRound : Int -> Int -> Model -> Model
+applyAttackRound playerDamage monsterDamage model =
+    case model.state of
+        Fighting fightingMonster ->
+            let
+                newMonsters =
+                    List.filterMap
+                        (\monster ->
+                            if monster.id == fightingMonster.id then
+                                let
+                                    newHealth =
+                                        monster.health - monsterDamage
+                                in
+                                if newHealth <= 0 then
+                                    Nothing
+
+                                else
+                                    Just
+                                        { monster
+                                            | health = newHealth
+                                            , hits =
+                                                { amount = monsterDamage
+                                                , disappearTime = disappearTime
+                                                }
+                                                    :: monster.hits
+                                        }
+
+                            else
+                                Just monster
+                        )
+                        model.monsters
+
+                disappearTime =
+                    model.now + 500
+            in
+            { model
+                | health = max 1 (model.health - playerDamage)
+                , hits =
+                    { amount =
+                        if model.health == 1 then
+                            0
+
+                        else
+                            playerDamage
+                    , disappearTime = disappearTime
+                    }
+                        :: model.hits
+                , monsters = newMonsters
+                , state =
+                    case List.filter (\monster -> monster.id == fightingMonster.id) newMonsters |> List.head of
+                        Nothing ->
+                            Standing
+
+                        Just newFightingMonster ->
+                            Fighting newFightingMonster
+                , accuracyXp =
+                    if model.attackStyle == AccuracyStyle then
+                        model.accuracyXp + monsterDamage
+
+                    else
+                        model.accuracyXp
+                , strengthXp =
+                    if model.attackStyle == StrengthStyle then
+                        model.strengthXp + monsterDamage
+
+                    else
+                        model.strengthXp
+                , defenseXp =
+                    if model.attackStyle == DefenseStyle then
+                        model.defenseXp + monsterDamage
+
+                    else
+                        model.defenseXp
+            }
+
+        _ ->
+            model
 
 
 shortestPath : Point3d Meters coordinates -> Point3d Meters coordinates -> List (Point3d Meters coordinates)
@@ -395,12 +388,22 @@ getCamera model =
         }
 
 
+screenWidth : Float
+screenWidth =
+    800
+
+
+screenHeight : Float
+screenHeight =
+    600
+
+
 screen : Rectangle2d Pixels Meters
 screen =
     Rectangle2d.with
         { x1 = Pixels.pixels 0
-        , y1 = Pixels.pixels 600
-        , x2 = Pixels.pixels 800
+        , y1 = Pixels.pixels screenHeight
+        , x2 = Pixels.pixels screenWidth
         , y2 = Pixels.pixels 0
         }
 
@@ -431,7 +434,7 @@ view model =
                 , camera = getCamera model
                 , clipDepth = Length.meters 1
                 , background = Scene3d.transparentBackground
-                , dimensions = ( Pixels.pixels 800, Pixels.pixels 600 )
+                , dimensions = ( Pixels.pixels (round screenWidth), Pixels.pixels (round screenHeight) )
                 }
             , div []
                 (List.map
