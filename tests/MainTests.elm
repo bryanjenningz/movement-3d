@@ -96,3 +96,23 @@ mouseDown =
                     , Cmd.none
                     )
         ]
+
+
+animationFrame : Test
+animationFrame =
+    describe "AnimationFrame msg"
+        [ test "Switches state to Fighting when the state is Attacking and travelPath is empty" <|
+            \_ ->
+                let
+                    attackingModel =
+                        { initialModel
+                            | location = Point3d.fromMeters { x = -3, y = -2, z = 0 }
+                            , state = Main.Attacking attackingMonster
+                        }
+
+                    attackingMonster =
+                        { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3 }
+                in
+                Expect.equal (Main.update Main.AnimationFrame attackingModel)
+                    ( { attackingModel | state = Main.Fighting attackingMonster }, Cmd.none )
+        ]
