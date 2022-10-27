@@ -1,4 +1,4 @@
-module Main exposing (main)
+module Main exposing (Monster, State(..), init, main)
 
 import Angle
 import Axis3d exposing (Axis3d)
