@@ -54,4 +54,18 @@ mouseDown =
                       }
                     , Cmd.none
                     )
+        , test "Gives a travelPath and Attacking state when you click on a monster" <|
+            \_ ->
+                Expect.equal (Main.update (Main.MouseDown (Point2d.pixels 200 200)) initialModel)
+                    ( { initialModel
+                        | travelPath =
+                            [ Point3d.fromMeters { x = -1, y = -1, z = 0 }
+                            , Point3d.fromMeters { x = -2, y = -2, z = 0 }
+                            ]
+                        , state =
+                            Main.Attacking
+                                { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3 }
+                      }
+                    , Cmd.none
+                    )
         ]
