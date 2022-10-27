@@ -115,4 +115,18 @@ animationFrame =
                 in
                 Expect.equal (Main.update Main.AnimationFrame attackingModel)
                     ( { attackingModel | state = Main.Fighting attackingMonster }, Cmd.none )
+        , test "Nothing changes when state is Fighting" <|
+            \_ ->
+                let
+                    attackingModel =
+                        { initialModel
+                            | location = Point3d.fromMeters { x = -3, y = -2, z = 0 }
+                            , state = Main.Fighting attackingMonster
+                        }
+
+                    attackingMonster =
+                        { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3 }
+                in
+                Expect.equal (Main.update Main.AnimationFrame attackingModel)
+                    ( attackingModel, Cmd.none )
         ]
