@@ -99,6 +99,24 @@ mouseDown =
                       }
                     , Cmd.none
                     )
+        , test "Moves player to the monster's side if the player attacks while on top of the monster" <|
+            \_ ->
+                let
+                    modelOnTopOfMonster =
+                        { initialModel | location = Point3d.fromMeters { x = -3, y = -3, z = 0 } }
+
+                    mousePoint =
+                        toMousePoint modelOnTopOfMonster (Point3d.fromMeters { x = -3, y = -3, z = 0 })
+                in
+                Expect.equal (Main.update (Main.MouseDown mousePoint) modelOnTopOfMonster)
+                    ( { modelOnTopOfMonster
+                        | travelPath = [ Point3d.fromMeters { x = -2, y = -3, z = 0 } ]
+                        , state =
+                            Main.Attacking
+                                { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3, hits = [] }
+                      }
+                    , Cmd.none
+                    )
         ]
 
 

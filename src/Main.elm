@@ -16,6 +16,7 @@ import Plane3d
 import Point2d exposing (Point2d)
 import Point3d exposing (Point3d)
 import Point3d.Projection
+import Quantity
 import Random
 import Rectangle2d exposing (Rectangle2d)
 import Scene3d
@@ -244,11 +245,38 @@ applyMouseDown mousePoint model =
                 in
                 case attackingMonster of
                     Just monster ->
-                        { model
-                            | travelPath =
+                        let
+                            newTravelPath =
                                 shortestPath model.location destination
                                     -- Don't go directly on the monster when you're attacking the monster
                                     |> List.filter (\point -> point /= destination)
+                        in
+                        { model
+                            | travelPath =
+                                case newTravelPath of
+                                    [] ->
+                                        [ movePoint (Vector3d.meters 1 0 0) destination
+                                        , movePoint (Vector3d.meters -1 0 0) destination
+                                        , movePoint (Vector3d.meters 0 1 0) destination
+                                        , movePoint (Vector3d.meters 0 -1 0) destination
+                                        ]
+                                            |> List.sortWith
+                                                (\a b ->
+                                                    Quantity.compare (Point3d.distanceFrom model.location a)
+                                                        (Point3d.distanceFrom model.location b)
+                                                )
+                                            |> List.head
+                                            |> Maybe.withDefault (movePoint (Vector3d.meters 1 0 0) destination)
+                                            |> (\newDestination ->
+                                                    if Point3d.equalWithin (Length.meters 0.01) model.location newDestination then
+                                                        []
+
+                                                    else
+                                                        [ newDestination ]
+                                               )
+
+                                    _ ->
+                                        newTravelPath
                             , state = Attacking monster
                         }
 
