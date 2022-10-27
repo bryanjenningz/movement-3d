@@ -33,6 +33,10 @@ init =
                             , { health = 3, id = 3, location = Point3d.fromMeters { x = 3, y = -3, z = 0 }, maxHealth = 3, hits = [] }
                             ]
                       , now = -1
+                      , attackStyle = Main.AccuracyStyle
+                      , accuracyXp = 0
+                      , strengthXp = 0
+                      , defenseXp = 0
                       }
                     , Cmd.none
                     )

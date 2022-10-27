@@ -1,4 +1,4 @@
-module Main exposing (Model, Monster, Msg(..), State(..), getCamera, init, main, screen, update)
+module Main exposing (AttackStyle(..), Model, Monster, Msg(..), State(..), getCamera, init, main, screen, update)
 
 import Angle
 import Axis3d exposing (Axis3d)
@@ -6,8 +6,9 @@ import Browser
 import Browser.Events exposing (onAnimationFrame, onKeyDown, onKeyUp, onMouseDown)
 import Camera3d exposing (Camera3d)
 import Color exposing (Color)
-import Html exposing (Html, div, text)
+import Html exposing (Attribute, Html, button, div, text)
 import Html.Attributes exposing (style)
+import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import Length exposing (Meters)
 import Pixels exposing (Pixels)
@@ -37,6 +38,10 @@ type alias Model =
     , keysDown : Set String
     , monsters : List Monster
     , now : Int
+    , attackStyle : AttackStyle
+    , accuracyXp : Int
+    , strengthXp : Int
+    , defenseXp : Int
     }
 
 
@@ -61,6 +66,12 @@ type alias Monster =
     }
 
 
+type AttackStyle
+    = AccuracyStyle
+    | StrengthStyle
+    | DefenseStyle
+
+
 init : () -> ( Model, Cmd Msg )
 init () =
     ( { location = Point3d.meters 0 0 0
@@ -79,6 +90,10 @@ init () =
             ]
                 |> List.indexedMap (\id monster -> Monster id monster 3 3 [])
       , now = -1
+      , attackStyle = AccuracyStyle
+      , accuracyXp = 0
+      , strengthXp = 0
+      , defenseXp = 0
       }
     , Cmd.none
     )
@@ -91,6 +106,7 @@ type Msg
     | KeyUp String
     | GenerateAttackRound
     | AttackRound Int Int
+    | SetAttackStyle AttackStyle
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -206,37 +222,44 @@ update msg model =
                     Axis3d.intersectionWithPlane Plane3d.xy mouseAxis
                         |> Maybe.map (mapPoint (round >> toFloat))
             in
-            case maybeXyPlaneMousePoint of
-                Nothing ->
-                    ( model, Cmd.none )
+            if
+                ((Point2d.toPixels mousePoint |> .x) > 800)
+                    || ((Point2d.toPixels mousePoint |> .y) > 600)
+            then
+                ( model, Cmd.none )
 
-                Just destination ->
-                    let
-                        attackingMonster =
-                            List.filter
-                                (\monster -> Point3d.equalWithin (Length.meters 0.01) destination monster.location)
-                                model.monsters
-                                |> List.head
-                    in
-                    case attackingMonster of
-                        Just monster ->
-                            ( { model
-                                | travelPath =
-                                    shortestPath model.location destination
-                                        -- Don't go directly on the monster when you're attacking the monster
-                                        |> List.filter (\point -> point /= destination)
-                                , state = Attacking monster
-                              }
-                            , Cmd.none
-                            )
+            else
+                case maybeXyPlaneMousePoint of
+                    Nothing ->
+                        ( model, Cmd.none )
 
-                        Nothing ->
-                            ( { model
-                                | travelPath = shortestPath model.location destination
-                                , state = Standing
-                              }
-                            , Cmd.none
-                            )
+                    Just destination ->
+                        let
+                            attackingMonster =
+                                List.filter
+                                    (\monster -> Point3d.equalWithin (Length.meters 0.01) destination monster.location)
+                                    model.monsters
+                                    |> List.head
+                        in
+                        case attackingMonster of
+                            Just monster ->
+                                ( { model
+                                    | travelPath =
+                                        shortestPath model.location destination
+                                            -- Don't go directly on the monster when you're attacking the monster
+                                            |> List.filter (\point -> point /= destination)
+                                    , state = Attacking monster
+                                  }
+                                , Cmd.none
+                                )
+
+                            Nothing ->
+                                ( { model
+                                    | travelPath = shortestPath model.location destination
+                                    , state = Standing
+                                  }
+                                , Cmd.none
+                                )
 
         KeyDown key ->
             ( { model | keysDown = Set.insert key model.keysDown }, Cmd.none )
@@ -301,12 +324,33 @@ update msg model =
 
                                 Just newFightingMonster ->
                                     Fighting newFightingMonster
+                        , accuracyXp =
+                            if model.attackStyle == AccuracyStyle then
+                                model.accuracyXp + monsterDamage
+
+                            else
+                                model.accuracyXp
+                        , strengthXp =
+                            if model.attackStyle == StrengthStyle then
+                                model.strengthXp + monsterDamage
+
+                            else
+                                model.strengthXp
+                        , defenseXp =
+                            if model.attackStyle == DefenseStyle then
+                                model.defenseXp + monsterDamage
+
+                            else
+                                model.defenseXp
                       }
                     , Cmd.none
                     )
 
                 _ ->
                     ( model, Cmd.none )
+
+        SetAttackStyle attackStyle ->
+            ( { model | attackStyle = attackStyle }, Cmd.none )
 
 
 shortestPath : Point3d Meters coordinates -> Point3d Meters coordinates -> List (Point3d Meters coordinates)
@@ -369,7 +413,7 @@ mapPoint f point =
         |> Point3d.fromMeters
 
 
-view : Model -> Html msg
+view : Model -> Html Msg
 view model =
     div []
         [ div
@@ -407,6 +451,7 @@ view model =
             , div []
                 (List.map (\monster -> viewHits (getCamera model) monster.hits monster.location) model.monsters)
             ]
+        , div [ style "margin-bottom" "20px" ] [ viewAttackStyle model, viewXpBar model ]
         , div [] [ text "Use left and right arrow keys to rotate the screen." ]
         , div [] [ text "Click on the screen to move to that location." ]
         , div [] [ text "Click on a monster to attack it." ]
@@ -519,6 +564,50 @@ viewHealthBar camera health maxHealth point =
             ]
             []
         ]
+
+
+viewAttackStyle : Model -> Html Msg
+viewAttackStyle model =
+    div []
+        [ button
+            [ onClick (SetAttackStyle AccuracyStyle)
+            , activeAttackStyle (model.attackStyle == AccuracyStyle)
+            ]
+            [ text "Accuracy" ]
+        , button
+            [ onClick (SetAttackStyle StrengthStyle)
+            , activeAttackStyle (model.attackStyle == StrengthStyle)
+            ]
+            [ text "Strength" ]
+        , button
+            [ onClick (SetAttackStyle DefenseStyle)
+            , activeAttackStyle (model.attackStyle == DefenseStyle)
+            ]
+            [ text "Defense" ]
+        ]
+
+
+activeAttackStyle : Bool -> Attribute msg
+activeAttackStyle isActive =
+    if isActive then
+        style "background-color" redDamage
+
+    else
+        style "" ""
+
+
+viewXpBar : Model -> Html msg
+viewXpBar model =
+    div []
+        [ viewXp "Accuracy" model.accuracyXp
+        , viewXp "Strength" model.strengthXp
+        , viewXp "Defense" model.defenseXp
+        ]
+
+
+viewXp : String -> Int -> Html msg
+viewXp skill xp =
+    div [] [ text (skill ++ " XP: " ++ String.fromInt xp) ]
 
 
 subscriptions : Model -> Sub Msg
