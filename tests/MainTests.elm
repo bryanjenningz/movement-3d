@@ -117,6 +117,34 @@ mouseDown =
                       }
                     , Cmd.none
                     )
+        , test "If the player is walking, then you click, it should continue the next step and use that as the start of the next path" <|
+            \_ ->
+                let
+                    startModel =
+                        { initialModel
+                            | travelPath =
+                                [ Point3d.fromMeters { x = 0, y = 1, z = 0 }
+                                , Point3d.fromMeters { x = 0, y = 2, z = 0 }
+                                ]
+                        }
+
+                    mousePoint =
+                        toMousePoint startModel (Point3d.fromMeters { x = -3, y = -3, z = 0 })
+                in
+                Expect.equal (Main.update (Main.MouseDown mousePoint) startModel)
+                    ( { startModel
+                        | travelPath =
+                            [ Point3d.fromMeters { x = 0, y = 1, z = 0 }
+                            , Point3d.fromMeters { x = -1, y = 0, z = 0 }
+                            , Point3d.fromMeters { x = -2, y = -1, z = 0 }
+                            , Point3d.fromMeters { x = -3, y = -2, z = 0 }
+                            ]
+                        , state =
+                            Main.Attacking
+                                { health = 3, id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 }, maxHealth = 3, hits = [] }
+                      }
+                    , Cmd.none
+                    )
         ]
 
 

@@ -242,14 +242,18 @@ applyMouseDown mousePoint model =
                             (\monster -> Point3d.equalWithin (Length.meters 0.01) destination monster.location)
                             model.monsters
                             |> List.head
+
+                    start =
+                        List.head model.travelPath |> Maybe.withDefault model.location
                 in
                 case attackingMonster of
                     Just monster ->
                         let
                             newTravelPath =
-                                shortestPath model.location destination
+                                start
+                                    :: shortestPath start destination
                                     -- Don't go directly on the monster when you're attacking the monster
-                                    |> List.filter (\point -> point /= destination)
+                                    |> List.filter (\point -> point /= destination && point /= model.location)
                         in
                         { model
                             | travelPath =
@@ -282,7 +286,7 @@ applyMouseDown mousePoint model =
 
                     Nothing ->
                         { model
-                            | travelPath = shortestPath model.location destination
+                            | travelPath = shortestPath start destination
                             , state = Standing
                         }
 
