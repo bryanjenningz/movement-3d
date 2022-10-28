@@ -68,6 +68,19 @@ mouseDown =
                       }
                     , Cmd.none
                     )
+        , test "Always go to the nearest tile" <|
+            \_ ->
+                let
+                    startModel =
+                        { initialModel | location = startLocation }
+
+                    startLocation =
+                        Point3d.fromMeters { x = 0.4, y = 0.4, z = 0 }
+                in
+                Expect.equal (Main.update (Main.MouseDown (toMousePoint startModel startLocation)) startModel)
+                    ( { startModel | travelPath = [ Point3d.fromMeters { x = 0, y = 0, z = 0 } ] }
+                    , Cmd.none
+                    )
         , test "Gives a travelPath and Attacking state when you click on a monster" <|
             \_ ->
                 Expect.equal (Main.update (Main.MouseDown (Point2d.pixels 200 200)) initialModel)
