@@ -270,7 +270,16 @@ applyMouseDown mousePoint model =
                         { model | travelPath = newTravelPath, state = Attacking monster }
 
                     Nothing ->
-                        { model | travelPath = shortestPath start destination, state = Standing }
+                        { model
+                            | travelPath =
+                                case shortestPath start destination of
+                                    [] ->
+                                        [ destination ]
+
+                                    path ->
+                                        path
+                            , state = Standing
+                        }
 
 
 applyAttackRound : Int -> Int -> Model -> Model
