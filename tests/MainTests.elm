@@ -75,6 +75,7 @@ mouseDown =
                         | travelPath =
                             [ Point3d.fromMeters { x = -1, y = -1, z = 0 }
                             , Point3d.fromMeters { x = -2, y = -2, z = 0 }
+                            , Point3d.fromMeters { x = -2, y = -3, z = 0 }
                             ]
                         , state =
                             Main.Attacking
@@ -137,7 +138,8 @@ mouseDown =
                             [ Point3d.fromMeters { x = 0, y = 1, z = 0 }
                             , Point3d.fromMeters { x = -1, y = 0, z = 0 }
                             , Point3d.fromMeters { x = -2, y = -1, z = 0 }
-                            , Point3d.fromMeters { x = -3, y = -2, z = 0 }
+                            , Point3d.fromMeters { x = -2, y = -2, z = 0 }
+                            , Point3d.fromMeters { x = -2, y = -3, z = 0 }
                             ]
                         , state =
                             Main.Attacking

@@ -249,46 +249,28 @@ applyMouseDown mousePoint model =
                 case attackingMonster of
                     Just monster ->
                         let
+                            monsterSide =
+                                [ movePoint (Vector3d.meters 1 0 0) destination
+                                , movePoint (Vector3d.meters -1 0 0) destination
+                                , movePoint (Vector3d.meters 0 1 0) destination
+                                , movePoint (Vector3d.meters 0 -1 0) destination
+                                ]
+                                    |> List.sortWith
+                                        (\a b ->
+                                            Quantity.compare (Point3d.distanceFrom model.location a)
+                                                (Point3d.distanceFrom model.location b)
+                                        )
+                                    |> List.head
+                                    |> Maybe.withDefault (movePoint (Vector3d.meters 1 0 0) destination)
+
                             newTravelPath =
-                                start
-                                    :: shortestPath start destination
-                                    -- Don't go directly on the monster when you're attacking the monster
-                                    |> List.filter (\point -> point /= destination && point /= model.location)
+                                (start :: shortestPath start monsterSide)
+                                    |> List.filter (\point -> point /= model.location)
                         in
-                        { model
-                            | travelPath =
-                                case newTravelPath of
-                                    [] ->
-                                        [ movePoint (Vector3d.meters 1 0 0) destination
-                                        , movePoint (Vector3d.meters -1 0 0) destination
-                                        , movePoint (Vector3d.meters 0 1 0) destination
-                                        , movePoint (Vector3d.meters 0 -1 0) destination
-                                        ]
-                                            |> List.sortWith
-                                                (\a b ->
-                                                    Quantity.compare (Point3d.distanceFrom model.location a)
-                                                        (Point3d.distanceFrom model.location b)
-                                                )
-                                            |> List.head
-                                            |> Maybe.withDefault (movePoint (Vector3d.meters 1 0 0) destination)
-                                            |> (\newDestination ->
-                                                    if Point3d.equalWithin (Length.meters 0.01) model.location newDestination then
-                                                        []
-
-                                                    else
-                                                        [ newDestination ]
-                                               )
-
-                                    _ ->
-                                        newTravelPath
-                            , state = Attacking monster
-                        }
+                        { model | travelPath = newTravelPath, state = Attacking monster }
 
                     Nothing ->
-                        { model
-                            | travelPath = shortestPath start destination
-                            , state = Standing
-                        }
+                        { model | travelPath = shortestPath start destination, state = Standing }
 
 
 applyAttackRound : Int -> Int -> Model -> Model
