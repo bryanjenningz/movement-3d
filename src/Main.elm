@@ -638,7 +638,7 @@ viewHealthBar camera health maxHealth point =
             , style "top" "0"
             , style "width" (String.fromFloat (toFloat health / toFloat maxHealth * 100) ++ "%")
             , style "height" (String.fromFloat healthBarHeight ++ "px")
-            , style "background-color" "green"
+            , style "background-color" "lime"
             ]
             []
         ]
