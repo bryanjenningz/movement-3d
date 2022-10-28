@@ -1,6 +1,7 @@
 module Main exposing (AttackStyle(..), Model, Monster, Msg(..), State(..), getCamera, init, main, screen, update)
 
 import Angle exposing (Angle)
+import Array exposing (Array)
 import Axis3d exposing (Axis3d)
 import Browser
 import Browser.Events exposing (onAnimationFrame, onKeyDown, onKeyUp, onMouseDown)
@@ -26,6 +27,45 @@ import SketchPlane3d
 import Time
 import Vector3d exposing (Vector3d)
 import Viewpoint3d
+
+
+type GameMapTile
+    = GrassTile
+    | RoadTile
+
+
+gameMapTiles : List (List GameMapTile)
+gameMapTiles =
+    [ "GGGGRRGGGG"
+    , "GGGGRRGGGG"
+    , "GGGGRRGGGG"
+    , "GGGGRRGGGG"
+    , "GGGGRRGGGG"
+    , "GGGGRRRRRR"
+    , "GGGGRRRRRR"
+    , "GGGGRRGGGG"
+    , "GGGGRRGGGG"
+    , "GGGGRRGGGG"
+    ]
+        |> List.map (String.split "" >> List.map (toGameMapTile GrassTile))
+
+
+gameMapOffset : Float
+gameMapOffset =
+    (List.length gameMapTiles |> toFloat) / 2
+
+
+toGameMapTile : GameMapTile -> String -> GameMapTile
+toGameMapTile defaultTile tileStr =
+    case tileStr of
+        "G" ->
+            GrassTile
+
+        "R" ->
+            RoadTile
+
+        _ ->
+            defaultTile
 
 
 type alias Model =
@@ -444,8 +484,28 @@ view model =
                 { entities =
                     viewSquare (playerColor model.state) model.location
                         :: List.map
-                            (\monster -> viewSquare Color.darkGreen monster.location)
+                            (\monster -> viewSquare Color.darkPurple monster.location)
                             model.monsters
+                        ++ (List.indexedMap
+                                (\y tileRow ->
+                                    List.indexedMap
+                                        (\x tile ->
+                                            let
+                                                tileColor =
+                                                    case tile of
+                                                        GrassTile ->
+                                                            Color.darkGreen
+
+                                                        RoadTile ->
+                                                            Color.darkGray
+                                            in
+                                            viewSquare tileColor (Point3d.meters (toFloat x - gameMapOffset) (toFloat y - gameMapOffset) -0.01)
+                                        )
+                                        tileRow
+                                )
+                                gameMapTiles
+                                |> List.concat
+                           )
                 , camera = getCamera model
                 , clipDepth = Length.meters 1
                 , background = Scene3d.transparentBackground
