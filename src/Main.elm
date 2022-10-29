@@ -1,4 +1,4 @@
-module Main exposing (AttackStyle(..), Model, Monster, Msg(..), State(..), getCamera, init, main, screen, update)
+module Main exposing (AttackStyle(..), Model, Monster(..), Msg(..), State(..), getCamera, init, main, screen, update)
 
 import Angle exposing (Angle)
 import Axis3d exposing (Axis3d)
@@ -97,15 +97,26 @@ type alias Hit =
     }
 
 
-type alias Monster =
-    { id : Int
-    , name : String
-    , color : Color
-    , location : Point3d Meters Meters
-    , health : Int
-    , maxHealth : Int
-    , hits : List Hit
-    }
+type Monster
+    = AliveMonster
+        { id : Int
+        , name : String
+        , color : Color
+        , respawnLocation : Point3d Meters Meters
+        , location : Point3d Meters Meters
+        , health : Int
+        , maxHealth : Int
+        , hits : List Hit
+        }
+    | DeadMonster
+        { id : Int
+        , name : String
+        , color : Color
+        , respawnLocation : Point3d Meters Meters
+        , maxHealth : Int
+        , hits : List Hit
+        , respawnAt : Int
+        }
 
 
 type AttackStyle
@@ -130,7 +141,19 @@ init () =
             , Point3d.meters 3 3 0
             , Point3d.meters 3 -3 0
             ]
-                |> List.indexedMap (\id monster -> Monster id "Goblin (level 2)" Color.darkPurple monster 3 3 [])
+                |> List.indexedMap
+                    (\id location ->
+                        AliveMonster
+                            { id = id
+                            , name = "Goblin (level 2)"
+                            , color = Color.darkPurple
+                            , respawnLocation = location
+                            , location = location
+                            , health = 3
+                            , maxHealth = 3
+                            , hits = []
+                            }
+                    )
       , now = -1
       , attackStyle = AccuracyStyle
       , accuracyXp = 0
@@ -223,7 +246,28 @@ applyAnimationFrame time model =
 
         newMonsters =
             List.map
-                (\monster -> { monster | hits = List.filter (\hit -> hit.disappearTime > time) monster.hits })
+                (\m ->
+                    case m of
+                        AliveMonster monster ->
+                            AliveMonster
+                                { monster | hits = List.filter (\hit -> hit.disappearTime > time) monster.hits }
+
+                        DeadMonster monster ->
+                            if time >= monster.respawnAt then
+                                AliveMonster
+                                    { id = monster.id
+                                    , name = monster.name
+                                    , color = monster.color
+                                    , health = monster.maxHealth
+                                    , maxHealth = monster.maxHealth
+                                    , respawnLocation = monster.respawnLocation
+                                    , location = monster.respawnLocation
+                                    , hits = []
+                                    }
+
+                            else
+                                DeadMonster monster
+                )
                 model.monsters
 
         newModel =
@@ -280,7 +324,14 @@ applyMouseDown mousePoint model =
                 let
                     attackingMonster =
                         List.filter
-                            (\monster -> Point3d.equalWithin (Length.meters 0.01) destination monster.location)
+                            (\m ->
+                                case m of
+                                    AliveMonster monster ->
+                                        Point3d.equalWithin (Length.meters 0.01) destination monster.location
+
+                                    DeadMonster _ ->
+                                        False
+                            )
                             model.monsters
                             |> List.head
 
@@ -323,35 +374,56 @@ applyMouseDown mousePoint model =
                         }
 
 
+respawnTime : Int
+respawnTime =
+    -- 20 seconds
+    20000
+
+
 applyAttackRound : Int -> Int -> Model -> Model
 applyAttackRound playerDamage monsterDamage model =
     case model.state of
-        Fighting fightingMonster ->
+        Fighting (AliveMonster fightingMonster) ->
             let
                 newMonsters =
-                    List.filterMap
-                        (\monster ->
-                            if monster.id == fightingMonster.id then
-                                let
-                                    newHealth =
-                                        monster.health - monsterDamage
-                                in
-                                if newHealth <= 0 then
-                                    Nothing
+                    List.map
+                        (\mon ->
+                            case mon of
+                                AliveMonster monster ->
+                                    if monster.id == fightingMonster.id then
+                                        let
+                                            newHealth =
+                                                monster.health - monsterDamage
 
-                                else
-                                    Just
-                                        { monster
-                                            | health = newHealth
-                                            , hits =
+                                            newHits =
                                                 { amount = monsterDamage
                                                 , disappearTime = disappearTime
                                                 }
                                                     :: monster.hits
-                                        }
+                                        in
+                                        if newHealth <= 0 then
+                                            DeadMonster
+                                                { id = monster.id
+                                                , name = monster.name
+                                                , color = monster.color
+                                                , hits = newHits
+                                                , maxHealth = monster.maxHealth
+                                                , respawnAt = model.now + respawnTime
+                                                , respawnLocation = monster.respawnLocation
+                                                }
 
-                            else
-                                Just monster
+                                        else
+                                            AliveMonster
+                                                { monster
+                                                    | health = newHealth
+                                                    , hits = newHits
+                                                }
+
+                                    else
+                                        AliveMonster monster
+
+                                DeadMonster monster ->
+                                    DeadMonster monster
                         )
                         model.monsters
 
@@ -372,7 +444,19 @@ applyAttackRound playerDamage monsterDamage model =
                         :: model.hits
                 , monsters = newMonsters
                 , state =
-                    case List.filter (\monster -> monster.id == fightingMonster.id) newMonsters |> List.head of
+                    case
+                        List.filter
+                            (\monster ->
+                                case monster of
+                                    AliveMonster { id } ->
+                                        id == fightingMonster.id
+
+                                    DeadMonster _ ->
+                                        False
+                            )
+                            newMonsters
+                            |> List.head
+                    of
                         Nothing ->
                             Standing
 
@@ -513,11 +597,16 @@ view model =
                 }
             , div []
                 (List.map
-                    (\monster ->
-                        viewHealthBar (getCamera model)
-                            monster.health
-                            monster.maxHealth
-                            monster.location
+                    (\mon ->
+                        case mon of
+                            AliveMonster monster ->
+                                viewHealthBar (getCamera model)
+                                    monster.health
+                                    monster.maxHealth
+                                    monster.location
+
+                            DeadMonster _ ->
+                                text ""
                     )
                     model.monsters
                 )
@@ -529,7 +618,17 @@ view model =
             , viewHits (getCamera model) model.hits model.location
             , div [] (List.map (viewMonsterText (getCamera model)) model.monsters)
             , div []
-                (List.map (\monster -> viewHits (getCamera model) monster.hits monster.location) model.monsters)
+                (List.map
+                    (\mon ->
+                        case mon of
+                            AliveMonster monster ->
+                                viewHits (getCamera model) monster.hits monster.location
+
+                            DeadMonster _ ->
+                                text ""
+                    )
+                    model.monsters
+                )
             ]
         , div [ style "margin-bottom" "20px" ] [ viewAttackStyle model, viewXpBar model ]
         , div [] [ text "Use left and right arrow keys to rotate the screen." ]
@@ -644,32 +743,42 @@ getStateText model =
 
 
 viewMonster : Monster -> Scene3d.Entity Meters
-viewMonster monster =
-    viewSquare monster.color monster.location
+viewMonster mon =
+    case mon of
+        AliveMonster monster ->
+            viewSquare monster.color monster.location
+
+        DeadMonster _ ->
+            Scene3d.nothing
 
 
 viewMonsterText : Camera3d Meters Meters -> Monster -> Html msg
-viewMonsterText camera monster =
-    let
-        textPoint =
-            Point3d.Projection.toScreenSpace camera screen monster.location
-                |> Point2d.toPixels
-                |> (\pt -> { pt | x = pt.x - width / 2, y = pt.y - 10 })
+viewMonsterText camera mon =
+    case mon of
+        AliveMonster monster ->
+            let
+                textPoint =
+                    Point3d.Projection.toScreenSpace camera screen monster.location
+                        |> Point2d.toPixels
+                        |> (\pt -> { pt | x = pt.x - width / 2, y = pt.y - 10 })
 
-        width =
-            150
-    in
-    div
-        [ style "position" "absolute"
-        , style "left" (px textPoint.x)
-        , style "top" (px textPoint.y)
-        , style "width" (px width)
-        , style "text-align" "center"
-        , style "color" "white"
-        , style "font-size" "12px"
-        , style "font-weight" "bold"
-        ]
-        [ text monster.name ]
+                width =
+                    150
+            in
+            div
+                [ style "position" "absolute"
+                , style "left" (px textPoint.x)
+                , style "top" (px textPoint.y)
+                , style "width" (px width)
+                , style "text-align" "center"
+                , style "color" "white"
+                , style "font-size" "12px"
+                , style "font-weight" "bold"
+                ]
+                [ text monster.name ]
+
+        DeadMonster _ ->
+            text ""
 
 
 px : Float -> String
@@ -776,28 +885,8 @@ subscriptions model =
                 (Decode.field "clientX" Decode.float)
                 (Decode.field "clientY" Decode.float)
             )
+        , onAnimationFrame (Time.posixToMillis >> AnimationFrame)
         ]
-            ++ (if
-                    (not <| List.isEmpty model.travelPath)
-                        || Set.member "ArrowLeft" model.keysDown
-                        || Set.member "ArrowRight" model.keysDown
-                        || (case model.state of
-                                Attacking _ ->
-                                    True
-
-                                Fighting _ ->
-                                    True
-
-                                Standing ->
-                                    False
-                           )
-                        || (List.length model.hits > 0)
-                then
-                    [ onAnimationFrame (Time.posixToMillis >> AnimationFrame) ]
-
-                else
-                    []
-               )
             ++ (case model.state of
                     Fighting _ ->
                         [ Time.every 1000 (\_ -> GenerateAttackRound) ]
