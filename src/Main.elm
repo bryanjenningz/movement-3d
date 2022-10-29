@@ -483,27 +483,28 @@ view model =
             ]
             [ Scene3d.unlit
                 { entities =
-                    viewSquare (playerColor model.state) model.location
-                        :: List.map viewMonster model.monsters
-                        ++ (List.indexedMap
-                                (\y tileRow ->
-                                    List.indexedMap
-                                        (\x tile ->
-                                            let
-                                                tileColor =
-                                                    case tile of
-                                                        GrassTile ->
-                                                            Color.darkGreen
+                    (List.indexedMap
+                        (\y tileRow ->
+                            List.indexedMap
+                                (\x tile ->
+                                    let
+                                        tileColor =
+                                            case tile of
+                                                GrassTile ->
+                                                    Color.darkGreen
 
-                                                        RoadTile ->
-                                                            Color.darkGray
-                                            in
-                                            viewSquare tileColor (Point3d.meters (toFloat x - gameMapOffset) (toFloat y - gameMapOffset) -0.01)
-                                        )
-                                        tileRow
+                                                RoadTile ->
+                                                    Color.darkGray
+                                    in
+                                    viewSquare tileColor (Point3d.meters (toFloat x - gameMapOffset) (toFloat y - gameMapOffset) -0.01)
                                 )
-                                gameMapTiles
-                                |> List.concat
+                                tileRow
+                        )
+                        gameMapTiles
+                        |> List.concat
+                    )
+                        ++ (viewSquare (playerColor model.state) model.location
+                                :: List.map viewMonster model.monsters
                            )
                 , camera = getCamera model
                 , clipDepth = Length.meters 1
