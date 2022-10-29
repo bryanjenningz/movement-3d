@@ -22,6 +22,7 @@ goblin =
     , hits = []
     , name = "Goblin (level 2)"
     , color = Color.darkPurple
+    , travelPath = []
     }
 
 
@@ -206,8 +207,8 @@ animationFrame =
                     attackingMonster =
                         { goblin | id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 } }
                 in
-                Expect.equal (Main.update (Main.AnimationFrame 0) attackingModel)
-                    ( { attackingModel | state = Main.Fighting (Main.AliveMonster attackingMonster) }, Cmd.none )
+                Expect.equal (Main.update (Main.AnimationFrame 0) attackingModel |> Tuple.first)
+                    { attackingModel | state = Main.Fighting (Main.AliveMonster attackingMonster) }
         , test "Nothing changes when state is Fighting" <|
             \_ ->
                 let
@@ -221,6 +222,20 @@ animationFrame =
                     attackingMonster =
                         { goblin | id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 } }
                 in
-                Expect.equal (Main.update (Main.AnimationFrame 0) attackingModel)
-                    ( attackingModel, Cmd.none )
+                Expect.equal (Main.update (Main.AnimationFrame 0) attackingModel |> Tuple.first)
+                    attackingModel
+        , test "Monster moves if it has a travelPath" <|
+            \_ ->
+                let
+                    modelWithMonsterTravelPath =
+                        { initialModel | monsters = [ Main.AliveMonster travelingGoblin ] }
+
+                    travelingGoblin =
+                        { goblin | travelPath = [ Point3d.meters 0 3 0 ] }
+                in
+                Expect.equal (Main.update (Main.AnimationFrame 0) modelWithMonsterTravelPath |> Tuple.first)
+                    { modelWithMonsterTravelPath
+                        | now = 0
+                        , monsters = [ Main.AliveMonster { travelingGoblin | location = Point3d.meters -2.95 3 0 } ]
+                    }
         ]

@@ -73,7 +73,7 @@ type alias Model =
     , health : Int
     , maxHealth : Int
     , hits : List Hit
-    , travelPath : List (Point3d Meters Meters)
+    , travelPath : TravelPath
     , cameraAngle : Angle
     , keysDown : Set String
     , monsters : List Monster
@@ -83,6 +83,10 @@ type alias Model =
     , strengthXp : Int
     , defenseXp : Int
     }
+
+
+type alias TravelPath =
+    List (Point3d Meters Meters)
 
 
 type State
@@ -107,6 +111,7 @@ type Monster
         , health : Int
         , maxHealth : Int
         , hits : List Hit
+        , travelPath : TravelPath
         }
     | DeadMonster
         { id : Int
@@ -152,6 +157,7 @@ init () =
                             , health = 3
                             , maxHealth = 3
                             , hits = []
+                            , travelPath = []
                             }
                     )
       , now = -1
@@ -172,13 +178,14 @@ type Msg
     | GenerateAttackRound
     | AttackRound Int Int
     | SetAttackStyle AttackStyle
+    | SetNewMonsterTravelPaths (List (Maybe TravelPath))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         AnimationFrame time ->
-            ( applyAnimationFrame time model, Cmd.none )
+            ( applyAnimationFrame time model, generateMonsterTravelPaths model.monsters )
 
         MouseDown mousePoint ->
             ( applyMouseDown mousePoint model, Cmd.none )
@@ -198,30 +205,39 @@ update msg model =
         SetAttackStyle attackStyle ->
             ( { model | attackStyle = attackStyle }, Cmd.none )
 
+        SetNewMonsterTravelPaths newMonsterTravelPaths ->
+            let
+                newMonsters =
+                    List.map2
+                        (\mon maybeTravelPath ->
+                            case ( mon, maybeTravelPath ) of
+                                ( AliveMonster monster, Just travelPath ) ->
+                                    case model.state of
+                                        Fighting (AliveMonster fightingMonster) ->
+                                            if fightingMonster.id == monster.id then
+                                                mon
 
-applyAnimationFrame : Int -> Model -> Model
-applyAnimationFrame time model =
+                                            else
+                                                AliveMonster { monster | travelPath = travelPath }
+
+                                        _ ->
+                                            AliveMonster { monster | travelPath = travelPath }
+
+                                _ ->
+                                    mon
+                        )
+                        model.monsters
+                        newMonsterTravelPaths
+            in
+            ( { model | monsters = newMonsters }, Cmd.none )
+
+
+updateLocationTravelPath : Point3d Meters Meters -> TravelPath -> ( Point3d Meters Meters, TravelPath )
+updateLocationTravelPath location travelPath =
     let
-        ( newLocation, newTravelPath ) =
-            case model.travelPath of
-                [] ->
-                    ( model.location, model.travelPath )
-
-                destination :: remainingPath ->
-                    if model.location == destination then
-                        case remainingPath of
-                            [] ->
-                                ( model.location, [] )
-
-                            destination2 :: _ ->
-                                ( calculateNewLocation destination2, remainingPath )
-
-                    else
-                        ( calculateNewLocation destination, model.travelPath )
-
         calculateNewLocation : Point3d Meters Meters -> Point3d Meters Meters
         calculateNewLocation destination =
-            Vector3d.from model.location destination
+            Vector3d.from location destination
                 |> (\path ->
                         let
                             minLength =
@@ -229,9 +245,32 @@ applyAnimationFrame time model =
                         in
                         Vector3d.scaleTo (Length.meters minLength) path
                    )
-                |> Vector3d.plus (Vector3d.from Point3d.origin model.location)
+                |> Vector3d.plus (Vector3d.from Point3d.origin location)
                 |> Vector3d.toMeters
                 |> Point3d.fromMeters
+    in
+    case travelPath of
+        [] ->
+            ( location, travelPath )
+
+        destination :: remainingPath ->
+            if location == destination then
+                case remainingPath of
+                    [] ->
+                        ( location, [] )
+
+                    destination2 :: _ ->
+                        ( calculateNewLocation destination2, remainingPath )
+
+            else
+                ( calculateNewLocation destination, travelPath )
+
+
+applyAnimationFrame : Int -> Model -> Model
+applyAnimationFrame time model =
+    let
+        ( newLocation, newTravelPath ) =
+            updateLocationTravelPath model.location model.travelPath
 
         newState =
             case ( newTravelPath, model.state ) of
@@ -249,8 +288,26 @@ applyAnimationFrame time model =
                 (\m ->
                     case m of
                         AliveMonster monster ->
+                            let
+                                ( newMonsterLocation, newMonsterTravelPath ) =
+                                    updateLocationTravelPath monster.location monster.travelPath
+                            in
                             AliveMonster
-                                { monster | hits = List.filter (\hit -> hit.disappearTime > time) monster.hits }
+                                { monster
+                                    | hits = List.filter (\hit -> hit.disappearTime > time) monster.hits
+                                    , location = newMonsterLocation
+                                    , travelPath =
+                                        case model.state of
+                                            Fighting (AliveMonster fightingMonster) ->
+                                                if monster.id == fightingMonster.id then
+                                                    []
+
+                                                else
+                                                    newMonsterTravelPath
+
+                                            _ ->
+                                                newMonsterTravelPath
+                                }
 
                         DeadMonster monster ->
                             if time >= monster.respawnAt then
@@ -263,6 +320,7 @@ applyAnimationFrame time model =
                                     , respawnLocation = monster.respawnLocation
                                     , location = monster.respawnLocation
                                     , hits = []
+                                    , travelPath = []
                                     }
 
                             else
@@ -486,7 +544,7 @@ applyAttackRound playerDamage monsterDamage model =
             model
 
 
-shortestPath : Point3d Meters coordinates -> Point3d Meters coordinates -> List (Point3d Meters coordinates)
+shortestPath : Point3d Meters coordinates -> Point3d Meters coordinates -> TravelPath
 shortestPath start destination =
     if start == destination then
         []
@@ -900,6 +958,63 @@ generateAttackRound : Cmd Msg
 generateAttackRound =
     Random.generate (\( playerDamage, monsterDamage ) -> AttackRound playerDamage monsterDamage)
         (Random.pair (Random.int 0 1) (Random.int 0 1))
+
+
+addPoints : Point3d Meters Meters -> Point3d Meters Meters -> Point3d Meters Meters
+addPoints p1 p2 =
+    Vector3d.plus (Vector3d.from Point3d.origin p1) (Vector3d.from Point3d.origin p2)
+        |> Vector3d.toMeters
+        |> Point3d.fromMeters
+
+
+generateMonsterTravelPaths : List Monster -> Cmd Msg
+generateMonsterTravelPaths monsters =
+    Random.pair
+        (Random.weighted ( 99, Nothing ) [ ( 1, Just -1 ), ( 1, Just 0 ), ( 1, Just 1 ) ])
+        (Random.int -1 1)
+        |> Random.list (List.length monsters)
+        |> Random.map
+            (\points ->
+                List.map
+                    (\( maybeX, y ) ->
+                        case maybeX of
+                            Nothing ->
+                                Nothing
+
+                            Just x ->
+                                Just (Point3d.meters (toFloat x) (toFloat y) 0)
+                    )
+                    points
+            )
+        |> Random.map
+            (\maybePoints ->
+                let
+                    maybeDestinations =
+                        List.map2
+                            (\maybePoint m ->
+                                case ( maybePoint, m ) of
+                                    ( Just point, AliveMonster monster ) ->
+                                        Just <| addPoints point monster.respawnLocation
+
+                                    _ ->
+                                        Nothing
+                            )
+                            maybePoints
+                            monsters
+                in
+                List.map2
+                    (\mon maybeDestination ->
+                        case ( mon, maybeDestination ) of
+                            ( AliveMonster monster, Just destination ) ->
+                                Just (shortestPath monster.location destination)
+
+                            _ ->
+                                Nothing
+                    )
+                    monsters
+                    maybeDestinations
+            )
+        |> Random.generate SetNewMonsterTravelPaths
 
 
 main : Program () Model Msg
