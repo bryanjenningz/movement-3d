@@ -622,6 +622,7 @@ view model =
             , style "display" "inline-block"
             , style "position" "relative"
             , style "overflow" "hidden"
+            , style "user-select" "none"
             ]
             [ Scene3d.unlit
                 { entities =
