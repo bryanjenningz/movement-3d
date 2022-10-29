@@ -266,11 +266,51 @@ updateLocationTravelPath location travelPath =
                 ( calculateNewLocation destination, travelPath )
 
 
+closestSideOf : Point3d Meters Meters -> Point3d Meters Meters -> Point3d Meters Meters
+closestSideOf destination fromLocation =
+    [ movePoint (Vector3d.meters 1 0 0) destination
+    , movePoint (Vector3d.meters -1 0 0) destination
+    , movePoint (Vector3d.meters 0 1 0) destination
+    , movePoint (Vector3d.meters 0 -1 0) destination
+    ]
+        |> List.sortWith
+            (\a b ->
+                Quantity.compare (Point3d.distanceFrom fromLocation a)
+                    (Point3d.distanceFrom fromLocation b)
+            )
+        |> List.head
+        |> Maybe.withDefault (movePoint (Vector3d.meters 1 0 0) destination)
+
+
 applyAnimationFrame : Int -> Model -> Model
 applyAnimationFrame time model =
     let
         ( newLocation, newTravelPath ) =
-            updateLocationTravelPath model.location model.travelPath
+            case model.state of
+                Attacking (AliveMonster monster) ->
+                    let
+                        destination =
+                            Maybe.withDefault monster.location (List.head monster.travelPath)
+
+                        monsterSide =
+                            closestSideOf destination model.location
+                    in
+                    updateLocationTravelPath model.location
+                        (shortestPath model.location monsterSide)
+
+                Fighting (AliveMonster monster) ->
+                    let
+                        destination =
+                            Maybe.withDefault monster.location (List.head monster.travelPath)
+
+                        monsterSide =
+                            closestSideOf destination model.location
+                    in
+                    updateLocationTravelPath model.location
+                        (shortestPath model.location monsterSide)
+
+                _ ->
+                    updateLocationTravelPath model.location model.travelPath
 
         newState =
             case ( newTravelPath, model.state ) of
@@ -300,7 +340,7 @@ applyAnimationFrame time model =
                                         case model.state of
                                             Fighting (AliveMonster fightingMonster) ->
                                                 if monster.id == fightingMonster.id then
-                                                    []
+                                                    List.take 1 newMonsterTravelPath
 
                                                 else
                                                     newMonsterTravelPath
@@ -400,18 +440,7 @@ applyMouseDown mousePoint model =
                     Just monster ->
                         let
                             monsterSide =
-                                [ movePoint (Vector3d.meters 1 0 0) destination
-                                , movePoint (Vector3d.meters -1 0 0) destination
-                                , movePoint (Vector3d.meters 0 1 0) destination
-                                , movePoint (Vector3d.meters 0 -1 0) destination
-                                ]
-                                    |> List.sortWith
-                                        (\a b ->
-                                            Quantity.compare (Point3d.distanceFrom model.location a)
-                                                (Point3d.distanceFrom model.location b)
-                                        )
-                                    |> List.head
-                                    |> Maybe.withDefault (movePoint (Vector3d.meters 1 0 0) destination)
+                                closestSideOf destination model.location
 
                             newTravelPath =
                                 (start :: shortestPath start monsterSide)
