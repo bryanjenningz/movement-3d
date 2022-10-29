@@ -494,7 +494,7 @@ ${variant}`;
   var VERSION = "1.0.2";
   var TARGET_NAME = "My target name";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1667034680202"
+    "1667045407561"
   );
   var ORIGINAL_COMPILATION_MODE = "standard";
   var WEBSOCKET_PORT = "44269";
@@ -9234,7 +9234,7 @@ var $author$project$Main$init = function (_v0) {
 				F2(
 					function (id, location) {
 						return $author$project$Main$AliveMonster(
-							{color: $avh4$elm_color$Color$darkPurple, health: 3, hits: _List_Nil, id: id, location: location, maxHealth: 3, name: 'Goblin (level 2)', respawnLocation: location});
+							{color: $avh4$elm_color$Color$darkPurple, health: 3, hits: _List_Nil, id: id, location: location, maxHealth: 3, name: 'Goblin (level 2)', respawnLocation: location, travelPath: _List_Nil});
 					}),
 				_List_fromArray(
 					[
@@ -10074,6 +10074,137 @@ var $author$project$Main$DeadMonster = function (a) {
 var $author$project$Main$Fighting = function (a) {
 	return {$: 'Fighting', a: a};
 };
+var $ianmackenzie$elm_units$Quantity$compare = F2(
+	function (_v0, _v1) {
+		var x = _v0.a;
+		var y = _v1.a;
+		return A2($elm$core$Basics$compare, x, y);
+	});
+var $elm$core$Basics$abs = function (n) {
+	return (n < 0) ? (-n) : n;
+};
+var $elm$core$Basics$sqrt = _Basics_sqrt;
+var $ianmackenzie$elm_units$Quantity$zero = $ianmackenzie$elm_units$Quantity$Quantity(0);
+var $ianmackenzie$elm_geometry$Point3d$distanceFrom = F2(
+	function (_v0, _v1) {
+		var p1 = _v0.a;
+		var p2 = _v1.a;
+		var deltaZ = p2.z - p1.z;
+		var deltaY = p2.y - p1.y;
+		var deltaX = p2.x - p1.x;
+		var largestComponent = A2(
+			$elm$core$Basics$max,
+			$elm$core$Basics$abs(deltaX),
+			A2(
+				$elm$core$Basics$max,
+				$elm$core$Basics$abs(deltaY),
+				$elm$core$Basics$abs(deltaZ)));
+		if (!largestComponent) {
+			return $ianmackenzie$elm_units$Quantity$zero;
+		} else {
+			var scaledZ = deltaZ / largestComponent;
+			var scaledY = deltaY / largestComponent;
+			var scaledX = deltaX / largestComponent;
+			var scaledLength = $elm$core$Basics$sqrt(((scaledX * scaledX) + (scaledY * scaledY)) + (scaledZ * scaledZ));
+			return $ianmackenzie$elm_units$Quantity$Quantity(scaledLength * largestComponent);
+		}
+	});
+var $elm$core$List$head = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(x);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $ianmackenzie$elm_geometry$Geometry$Types$Vector3d = function (a) {
+	return {$: 'Vector3d', a: a};
+};
+var $ianmackenzie$elm_geometry$Vector3d$meters = F3(
+	function (x, y, z) {
+		return $ianmackenzie$elm_geometry$Geometry$Types$Vector3d(
+			{x: x, y: y, z: z});
+	});
+var $ianmackenzie$elm_geometry$Point3d$fromMeters = function (givenCoordinates) {
+	return $ianmackenzie$elm_geometry$Geometry$Types$Point3d(givenCoordinates);
+};
+var $ianmackenzie$elm_geometry$Vector3d$fromMeters = function (givenComponents) {
+	return $ianmackenzie$elm_geometry$Geometry$Types$Vector3d(givenComponents);
+};
+var $ianmackenzie$elm_geometry$Vector3d$plus = F2(
+	function (_v0, _v1) {
+		var v2 = _v0.a;
+		var v1 = _v1.a;
+		return $ianmackenzie$elm_geometry$Geometry$Types$Vector3d(
+			{x: v1.x + v2.x, y: v1.y + v2.y, z: v1.z + v2.z});
+	});
+var $ianmackenzie$elm_geometry$Point3d$toMeters = function (_v0) {
+	var pointCoordinates = _v0.a;
+	return pointCoordinates;
+};
+var $ianmackenzie$elm_geometry$Vector3d$toMeters = function (_v0) {
+	var vectorComponents = _v0.a;
+	return vectorComponents;
+};
+var $author$project$Main$movePoint = F2(
+	function (movement, point) {
+		return $ianmackenzie$elm_geometry$Point3d$fromMeters(
+			$ianmackenzie$elm_geometry$Vector3d$toMeters(
+				A2(
+					$ianmackenzie$elm_geometry$Vector3d$plus,
+					movement,
+					$ianmackenzie$elm_geometry$Vector3d$fromMeters(
+						$ianmackenzie$elm_geometry$Point3d$toMeters(point)))));
+	});
+var $elm$core$List$sortWith = _List_sortWith;
+var $elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
+var $author$project$Main$closestSideOf = F2(
+	function (destination, fromLocation) {
+		return A2(
+			$elm$core$Maybe$withDefault,
+			A2(
+				$author$project$Main$movePoint,
+				A3($ianmackenzie$elm_geometry$Vector3d$meters, 1, 0, 0),
+				destination),
+			$elm$core$List$head(
+				A2(
+					$elm$core$List$sortWith,
+					F2(
+						function (a, b) {
+							return A2(
+								$ianmackenzie$elm_units$Quantity$compare,
+								A2($ianmackenzie$elm_geometry$Point3d$distanceFrom, fromLocation, a),
+								A2($ianmackenzie$elm_geometry$Point3d$distanceFrom, fromLocation, b));
+						}),
+					_List_fromArray(
+						[
+							A2(
+							$author$project$Main$movePoint,
+							A3($ianmackenzie$elm_geometry$Vector3d$meters, 1, 0, 0),
+							destination),
+							A2(
+							$author$project$Main$movePoint,
+							A3($ianmackenzie$elm_geometry$Vector3d$meters, -1, 0, 0),
+							destination),
+							A2(
+							$author$project$Main$movePoint,
+							A3($ianmackenzie$elm_geometry$Vector3d$meters, 0, 1, 0),
+							destination),
+							A2(
+							$author$project$Main$movePoint,
+							A3($ianmackenzie$elm_geometry$Vector3d$meters, 0, -1, 0),
+							destination)
+						]))));
+	});
 var $elm$core$List$filter = F2(
 	function (isGood, list) {
 		return A3(
@@ -10085,24 +10216,7 @@ var $elm$core$List$filter = F2(
 			_List_Nil,
 			list);
 	});
-var $ianmackenzie$elm_geometry$Geometry$Types$Vector3d = function (a) {
-	return {$: 'Vector3d', a: a};
-};
-var $ianmackenzie$elm_geometry$Vector3d$from = F2(
-	function (_v0, _v1) {
-		var p1 = _v0.a;
-		var p2 = _v1.a;
-		return $ianmackenzie$elm_geometry$Geometry$Types$Vector3d(
-			{x: p2.x - p1.x, y: p2.y - p1.y, z: p2.z - p1.z});
-	});
-var $ianmackenzie$elm_geometry$Point3d$fromMeters = function (givenCoordinates) {
-	return $ianmackenzie$elm_geometry$Geometry$Types$Point3d(givenCoordinates);
-};
 var $elm$core$Basics$ge = _Utils_ge;
-var $ianmackenzie$elm_units$Length$inMeters = function (_v0) {
-	var numMeters = _v0.a;
-	return numMeters;
-};
 var $ianmackenzie$elm_units$Angle$inRadians = function (_v0) {
 	var numRadians = _v0.a;
 	return numRadians;
@@ -10110,11 +10224,193 @@ var $ianmackenzie$elm_units$Angle$inRadians = function (_v0) {
 var $ianmackenzie$elm_units$Angle$inTurns = function (angle) {
 	return $ianmackenzie$elm_units$Angle$inRadians(angle) / (2 * $elm$core$Basics$pi);
 };
-var $elm$core$Basics$abs = function (n) {
-	return (n < 0) ? (-n) : n;
+var $elm$core$Dict$member = F2(
+	function (key, dict) {
+		var _v0 = A2($elm$core$Dict$get, key, dict);
+		if (_v0.$ === 'Just') {
+			return true;
+		} else {
+			return false;
+		}
+	});
+var $elm$core$Set$member = F2(
+	function (key, _v0) {
+		var dict = _v0.a;
+		return A2($elm$core$Dict$member, key, dict);
+	});
+var $elm$core$Basics$clamp = F3(
+	function (low, high, number) {
+		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
+	});
+var $ianmackenzie$elm_geometry$Vector3d$from = F2(
+	function (_v0, _v1) {
+		var p1 = _v0.a;
+		var p2 = _v1.a;
+		return $ianmackenzie$elm_geometry$Geometry$Types$Vector3d(
+			{x: p2.x - p1.x, y: p2.y - p1.y, z: p2.z - p1.z});
+	});
+var $ianmackenzie$elm_geometry$Point3d$origin = $ianmackenzie$elm_geometry$Geometry$Types$Point3d(
+	{x: 0, y: 0, z: 0});
+var $author$project$Main$shortestPath = F2(
+	function (start, destination) {
+		if (_Utils_eq(start, destination)) {
+			return _List_Nil;
+		} else {
+			var yDiff = A3(
+				$elm$core$Basics$clamp,
+				-1,
+				1,
+				$ianmackenzie$elm_geometry$Point3d$toMeters(destination).y - $ianmackenzie$elm_geometry$Point3d$toMeters(start).y);
+			var xDiff = A3(
+				$elm$core$Basics$clamp,
+				-1,
+				1,
+				$ianmackenzie$elm_geometry$Point3d$toMeters(destination).x - $ianmackenzie$elm_geometry$Point3d$toMeters(start).x);
+			var newStart = $ianmackenzie$elm_geometry$Point3d$fromMeters(
+				$ianmackenzie$elm_geometry$Vector3d$toMeters(
+					A2(
+						$ianmackenzie$elm_geometry$Vector3d$plus,
+						A2(
+							$ianmackenzie$elm_geometry$Vector3d$from,
+							$ianmackenzie$elm_geometry$Point3d$origin,
+							A3($ianmackenzie$elm_geometry$Point3d$meters, xDiff, yDiff, 0)),
+						A2($ianmackenzie$elm_geometry$Vector3d$from, $ianmackenzie$elm_geometry$Point3d$origin, start))));
+			return A2(
+				$elm$core$List$cons,
+				newStart,
+				A2($author$project$Main$shortestPath, newStart, destination));
+		}
+	});
+var $elm$core$List$takeReverse = F3(
+	function (n, list, kept) {
+		takeReverse:
+		while (true) {
+			if (n <= 0) {
+				return kept;
+			} else {
+				if (!list.b) {
+					return kept;
+				} else {
+					var x = list.a;
+					var xs = list.b;
+					var $temp$n = n - 1,
+						$temp$list = xs,
+						$temp$kept = A2($elm$core$List$cons, x, kept);
+					n = $temp$n;
+					list = $temp$list;
+					kept = $temp$kept;
+					continue takeReverse;
+				}
+			}
+		}
+	});
+var $elm$core$List$takeTailRec = F2(
+	function (n, list) {
+		return $elm$core$List$reverse(
+			A3($elm$core$List$takeReverse, n, list, _List_Nil));
+	});
+var $elm$core$List$takeFast = F3(
+	function (ctr, n, list) {
+		if (n <= 0) {
+			return _List_Nil;
+		} else {
+			var _v0 = _Utils_Tuple2(n, list);
+			_v0$1:
+			while (true) {
+				_v0$5:
+				while (true) {
+					if (!_v0.b.b) {
+						return list;
+					} else {
+						if (_v0.b.b.b) {
+							switch (_v0.a) {
+								case 1:
+									break _v0$1;
+								case 2:
+									var _v2 = _v0.b;
+									var x = _v2.a;
+									var _v3 = _v2.b;
+									var y = _v3.a;
+									return _List_fromArray(
+										[x, y]);
+								case 3:
+									if (_v0.b.b.b.b) {
+										var _v4 = _v0.b;
+										var x = _v4.a;
+										var _v5 = _v4.b;
+										var y = _v5.a;
+										var _v6 = _v5.b;
+										var z = _v6.a;
+										return _List_fromArray(
+											[x, y, z]);
+									} else {
+										break _v0$5;
+									}
+								default:
+									if (_v0.b.b.b.b && _v0.b.b.b.b.b) {
+										var _v7 = _v0.b;
+										var x = _v7.a;
+										var _v8 = _v7.b;
+										var y = _v8.a;
+										var _v9 = _v8.b;
+										var z = _v9.a;
+										var _v10 = _v9.b;
+										var w = _v10.a;
+										var tl = _v10.b;
+										return (ctr > 1000) ? A2(
+											$elm$core$List$cons,
+											x,
+											A2(
+												$elm$core$List$cons,
+												y,
+												A2(
+													$elm$core$List$cons,
+													z,
+													A2(
+														$elm$core$List$cons,
+														w,
+														A2($elm$core$List$takeTailRec, n - 4, tl))))) : A2(
+											$elm$core$List$cons,
+											x,
+											A2(
+												$elm$core$List$cons,
+												y,
+												A2(
+													$elm$core$List$cons,
+													z,
+													A2(
+														$elm$core$List$cons,
+														w,
+														A3($elm$core$List$takeFast, ctr + 1, n - 4, tl)))));
+									} else {
+										break _v0$5;
+									}
+							}
+						} else {
+							if (_v0.a === 1) {
+								break _v0$1;
+							} else {
+								break _v0$5;
+							}
+						}
+					}
+				}
+				return list;
+			}
+			var _v1 = _v0.b;
+			var x = _v1.a;
+			return _List_fromArray(
+				[x]);
+		}
+	});
+var $elm$core$List$take = F2(
+	function (n, list) {
+		return A3($elm$core$List$takeFast, 0, n, list);
+	});
+var $ianmackenzie$elm_units$Length$inMeters = function (_v0) {
+	var numMeters = _v0.a;
+	return numMeters;
 };
-var $elm$core$Basics$sqrt = _Basics_sqrt;
-var $ianmackenzie$elm_units$Quantity$zero = $ianmackenzie$elm_units$Quantity$Quantity(0);
 var $ianmackenzie$elm_geometry$Vector3d$length = function (_v0) {
 	var v = _v0.a;
 	var largestComponent = A2(
@@ -10134,35 +10430,12 @@ var $ianmackenzie$elm_geometry$Vector3d$length = function (_v0) {
 		return $ianmackenzie$elm_units$Quantity$Quantity(scaledLength * largestComponent);
 	}
 };
-var $elm$core$Dict$member = F2(
-	function (key, dict) {
-		var _v0 = A2($elm$core$Dict$get, key, dict);
-		if (_v0.$ === 'Just') {
-			return true;
-		} else {
-			return false;
-		}
-	});
-var $elm$core$Set$member = F2(
-	function (key, _v0) {
-		var dict = _v0.a;
-		return A2($elm$core$Dict$member, key, dict);
-	});
 var $ianmackenzie$elm_units$Length$meters = function (numMeters) {
 	return $ianmackenzie$elm_units$Quantity$Quantity(numMeters);
 };
 var $elm$core$Basics$min = F2(
 	function (x, y) {
 		return (_Utils_cmp(x, y) < 0) ? x : y;
-	});
-var $ianmackenzie$elm_geometry$Point3d$origin = $ianmackenzie$elm_geometry$Geometry$Types$Point3d(
-	{x: 0, y: 0, z: 0});
-var $ianmackenzie$elm_geometry$Vector3d$plus = F2(
-	function (_v0, _v1) {
-		var v2 = _v0.a;
-		var v1 = _v1.a;
-		return $ianmackenzie$elm_geometry$Geometry$Types$Vector3d(
-			{x: v1.x + v2.x, y: v1.y + v2.y, z: v1.z + v2.z});
 	});
 var $ianmackenzie$elm_geometry$Vector3d$zero = $ianmackenzie$elm_geometry$Geometry$Types$Vector3d(
 	{x: 0, y: 0, z: 0});
@@ -10188,10 +10461,48 @@ var $ianmackenzie$elm_geometry$Vector3d$scaleTo = F2(
 				{x: (q * scaledX) / scaledLength, y: (q * scaledY) / scaledLength, z: (q * scaledZ) / scaledLength});
 		}
 	});
-var $ianmackenzie$elm_geometry$Vector3d$toMeters = function (_v0) {
-	var vectorComponents = _v0.a;
-	return vectorComponents;
-};
+var $author$project$Main$updateLocationTravelPath = F2(
+	function (location, travelPath) {
+		var calculateNewLocation = function (destination) {
+			return $ianmackenzie$elm_geometry$Point3d$fromMeters(
+				$ianmackenzie$elm_geometry$Vector3d$toMeters(
+					A2(
+						$ianmackenzie$elm_geometry$Vector3d$plus,
+						A2($ianmackenzie$elm_geometry$Vector3d$from, $ianmackenzie$elm_geometry$Point3d$origin, location),
+						function (path) {
+							var minLength = A2(
+								$elm$core$Basics$min,
+								0.05,
+								$ianmackenzie$elm_units$Length$inMeters(
+									$ianmackenzie$elm_geometry$Vector3d$length(path)));
+							return A2(
+								$ianmackenzie$elm_geometry$Vector3d$scaleTo,
+								$ianmackenzie$elm_units$Length$meters(minLength),
+								path);
+						}(
+							A2($ianmackenzie$elm_geometry$Vector3d$from, location, destination)))));
+		};
+		if (!travelPath.b) {
+			return _Utils_Tuple2(location, travelPath);
+		} else {
+			var destination = travelPath.a;
+			var remainingPath = travelPath.b;
+			if (_Utils_eq(location, destination)) {
+				if (!remainingPath.b) {
+					return _Utils_Tuple2(location, _List_Nil);
+				} else {
+					var destination2 = remainingPath.a;
+					return _Utils_Tuple2(
+						calculateNewLocation(destination2),
+						remainingPath);
+				}
+			} else {
+				return _Utils_Tuple2(
+					calculateNewLocation(destination),
+					travelPath);
+			}
+		}
+	});
 var $author$project$Main$applyAnimationFrame = F2(
 	function (time, model) {
 		var turnAngle = F2(
@@ -10205,6 +10516,9 @@ var $author$project$Main$applyAnimationFrame = F2(
 			function (m) {
 				if (m.$ === 'AliveMonster') {
 					var monster = m.a;
+					var _v4 = A2($author$project$Main$updateLocationTravelPath, monster.location, monster.travelPath);
+					var newMonsterLocation = _v4.a;
+					var newMonsterTravelPath = _v4.b;
 					return $author$project$Main$AliveMonster(
 						_Utils_update(
 							monster,
@@ -10214,12 +10528,22 @@ var $author$project$Main$applyAnimationFrame = F2(
 									function (hit) {
 										return _Utils_cmp(hit.disappearTime, time) > 0;
 									},
-									monster.hits)
+									monster.hits),
+								location: newMonsterLocation,
+								travelPath: function () {
+									var _v5 = model.state;
+									if ((_v5.$ === 'Fighting') && (_v5.a.$ === 'AliveMonster')) {
+										var fightingMonster = _v5.a.a;
+										return _Utils_eq(monster.id, fightingMonster.id) ? A2($elm$core$List$take, 1, newMonsterTravelPath) : newMonsterTravelPath;
+									} else {
+										return newMonsterTravelPath;
+									}
+								}()
 							}));
 				} else {
 					var monster = m.a;
 					return (_Utils_cmp(time, monster.respawnAt) > -1) ? $author$project$Main$AliveMonster(
-						{color: monster.color, health: monster.maxHealth, hits: _List_Nil, id: monster.id, location: monster.respawnLocation, maxHealth: monster.maxHealth, name: monster.name, respawnLocation: monster.respawnLocation}) : $author$project$Main$DeadMonster(monster);
+						{color: monster.color, health: monster.maxHealth, hits: _List_Nil, id: monster.id, location: monster.respawnLocation, maxHealth: monster.maxHealth, name: monster.name, respawnLocation: monster.respawnLocation, travelPath: _List_Nil}) : $author$project$Main$DeadMonster(monster);
 				}
 			},
 			model.monsters);
@@ -10229,54 +10553,53 @@ var $author$project$Main$applyAnimationFrame = F2(
 				return _Utils_cmp(hit.disappearTime, time) > 0;
 			},
 			model.hits);
-		var calculateNewLocation = function (destination) {
-			return $ianmackenzie$elm_geometry$Point3d$fromMeters(
-				$ianmackenzie$elm_geometry$Vector3d$toMeters(
-					A2(
-						$ianmackenzie$elm_geometry$Vector3d$plus,
-						A2($ianmackenzie$elm_geometry$Vector3d$from, $ianmackenzie$elm_geometry$Point3d$origin, model.location),
-						function (path) {
-							var minLength = A2(
-								$elm$core$Basics$min,
-								0.05,
-								$ianmackenzie$elm_units$Length$inMeters(
-									$ianmackenzie$elm_geometry$Vector3d$length(path)));
-							return A2(
-								$ianmackenzie$elm_geometry$Vector3d$scaleTo,
-								$ianmackenzie$elm_units$Length$meters(minLength),
-								path);
-						}(
-							A2($ianmackenzie$elm_geometry$Vector3d$from, model.location, destination)))));
-		};
 		var _v0 = function () {
-			var _v1 = model.travelPath;
-			if (!_v1.b) {
-				return _Utils_Tuple2(model.location, model.travelPath);
-			} else {
-				var destination = _v1.a;
-				var remainingPath = _v1.b;
-				if (_Utils_eq(model.location, destination)) {
-					if (!remainingPath.b) {
-						return _Utils_Tuple2(model.location, _List_Nil);
-					} else {
-						var destination2 = remainingPath.a;
-						return _Utils_Tuple2(
-							calculateNewLocation(destination2),
-							remainingPath);
-					}
-				} else {
-					return _Utils_Tuple2(
-						calculateNewLocation(destination),
-						model.travelPath);
+			var _v1 = model.state;
+			_v1$2:
+			while (true) {
+				switch (_v1.$) {
+					case 'Attacking':
+						if (_v1.a.$ === 'AliveMonster') {
+							var monster = _v1.a.a;
+							var destination = A2(
+								$elm$core$Maybe$withDefault,
+								monster.location,
+								$elm$core$List$head(monster.travelPath));
+							var monsterSide = A2($author$project$Main$closestSideOf, destination, model.location);
+							return A2(
+								$author$project$Main$updateLocationTravelPath,
+								model.location,
+								A2($author$project$Main$shortestPath, model.location, monsterSide));
+						} else {
+							break _v1$2;
+						}
+					case 'Fighting':
+						if (_v1.a.$ === 'AliveMonster') {
+							var monster = _v1.a.a;
+							var destination = A2(
+								$elm$core$Maybe$withDefault,
+								monster.location,
+								$elm$core$List$head(monster.travelPath));
+							var monsterSide = A2($author$project$Main$closestSideOf, destination, model.location);
+							return A2(
+								$author$project$Main$updateLocationTravelPath,
+								model.location,
+								A2($author$project$Main$shortestPath, model.location, monsterSide));
+						} else {
+							break _v1$2;
+						}
+					default:
+						break _v1$2;
 				}
 			}
+			return A2($author$project$Main$updateLocationTravelPath, model.location, model.travelPath);
 		}();
 		var newLocation = _v0.a;
 		var newTravelPath = _v0.b;
 		var newState = function () {
-			var _v3 = _Utils_Tuple2(newTravelPath, model.state);
-			if ((!_v3.a.b) && (_v3.b.$ === 'Attacking')) {
-				var monster = _v3.b.a;
+			var _v2 = _Utils_Tuple2(newTravelPath, model.state);
+			if ((!_v2.a.b) && (_v2.b.$ === 'Attacking')) {
+				var monster = _v2.b.a;
 				return $author$project$Main$Fighting(monster);
 			} else {
 				return model.state;
@@ -10297,15 +10620,6 @@ var $author$project$Main$applyAnimationFrame = F2(
 	});
 var $author$project$Main$DefenseStyle = {$: 'DefenseStyle'};
 var $author$project$Main$StrengthStyle = {$: 'StrengthStyle'};
-var $elm$core$List$head = function (list) {
-	if (list.b) {
-		var x = list.a;
-		var xs = list.b;
-		return $elm$core$Maybe$Just(x);
-	} else {
-		return $elm$core$Maybe$Nothing;
-	}
-};
 var $author$project$Main$respawnTime = 20000;
 var $author$project$Main$applyAttackRound = F3(
 	function (playerDamage, monsterDamage, model) {
@@ -10381,36 +10695,6 @@ var $author$project$Main$applyAttackRound = F3(
 var $author$project$Main$Attacking = function (a) {
 	return {$: 'Attacking', a: a};
 };
-var $ianmackenzie$elm_units$Quantity$compare = F2(
-	function (_v0, _v1) {
-		var x = _v0.a;
-		var y = _v1.a;
-		return A2($elm$core$Basics$compare, x, y);
-	});
-var $ianmackenzie$elm_geometry$Point3d$distanceFrom = F2(
-	function (_v0, _v1) {
-		var p1 = _v0.a;
-		var p2 = _v1.a;
-		var deltaZ = p2.z - p1.z;
-		var deltaY = p2.y - p1.y;
-		var deltaX = p2.x - p1.x;
-		var largestComponent = A2(
-			$elm$core$Basics$max,
-			$elm$core$Basics$abs(deltaX),
-			A2(
-				$elm$core$Basics$max,
-				$elm$core$Basics$abs(deltaY),
-				$elm$core$Basics$abs(deltaZ)));
-		if (!largestComponent) {
-			return $ianmackenzie$elm_units$Quantity$zero;
-		} else {
-			var scaledZ = deltaZ / largestComponent;
-			var scaledY = deltaY / largestComponent;
-			var scaledX = deltaX / largestComponent;
-			var scaledLength = $elm$core$Basics$sqrt(((scaledX * scaledX) + (scaledY * scaledY)) + (scaledZ * scaledZ));
-			return $ianmackenzie$elm_units$Quantity$Quantity(scaledLength * largestComponent);
-		}
-	});
 var $ianmackenzie$elm_geometry$Point3d$equalWithin = F3(
 	function (_v0, _v1, _v2) {
 		var eps = _v0.a;
@@ -10798,10 +11082,6 @@ var $elm$core$Maybe$map = F2(
 			return $elm$core$Maybe$Nothing;
 		}
 	});
-var $ianmackenzie$elm_geometry$Point3d$toMeters = function (_v0) {
-	var pointCoordinates = _v0.a;
-	return pointCoordinates;
-};
 var $author$project$Main$mapPoint = F2(
 	function (f, point) {
 		return $ianmackenzie$elm_geometry$Point3d$fromMeters(
@@ -10816,24 +11096,6 @@ var $author$project$Main$mapPoint = F2(
 				};
 			}(
 				$ianmackenzie$elm_geometry$Point3d$toMeters(point)));
-	});
-var $ianmackenzie$elm_geometry$Vector3d$meters = F3(
-	function (x, y, z) {
-		return $ianmackenzie$elm_geometry$Geometry$Types$Vector3d(
-			{x: x, y: y, z: z});
-	});
-var $ianmackenzie$elm_geometry$Vector3d$fromMeters = function (givenComponents) {
-	return $ianmackenzie$elm_geometry$Geometry$Types$Vector3d(givenComponents);
-};
-var $author$project$Main$movePoint = F2(
-	function (movement, point) {
-		return $ianmackenzie$elm_geometry$Point3d$fromMeters(
-			$ianmackenzie$elm_geometry$Vector3d$toMeters(
-				A2(
-					$ianmackenzie$elm_geometry$Vector3d$plus,
-					movement,
-					$ianmackenzie$elm_geometry$Vector3d$fromMeters(
-						$ianmackenzie$elm_geometry$Point3d$toMeters(point)))));
 	});
 var $elm$core$Basics$neq = _Utils_notEqual;
 var $ianmackenzie$elm_units$Quantity$at = F2(
@@ -10918,15 +11180,6 @@ var $ianmackenzie$elm_3d_camera$Viewpoint3d$viewDirection = function (_v0) {
 	return $ianmackenzie$elm_geometry$Direction3d$reverse(
 		$ianmackenzie$elm_geometry$Frame3d$zDirection(frame));
 };
-var $elm$core$Maybe$withDefault = F2(
-	function (_default, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return value;
-		} else {
-			return _default;
-		}
-	});
 var $ianmackenzie$elm_geometry$Point2d$xCoordinateIn = F2(
 	function (_v0, _v1) {
 		var frame = _v0.a;
@@ -11103,41 +11356,6 @@ var $author$project$Main$screen = $ianmackenzie$elm_geometry$Rectangle2d$with(
 		y1: $ianmackenzie$elm_units$Pixels$pixels($author$project$Main$screenHeight),
 		y2: $ianmackenzie$elm_units$Pixels$pixels(0)
 	});
-var $elm$core$Basics$clamp = F3(
-	function (low, high, number) {
-		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
-	});
-var $author$project$Main$shortestPath = F2(
-	function (start, destination) {
-		if (_Utils_eq(start, destination)) {
-			return _List_Nil;
-		} else {
-			var yDiff = A3(
-				$elm$core$Basics$clamp,
-				-1,
-				1,
-				$ianmackenzie$elm_geometry$Point3d$toMeters(destination).y - $ianmackenzie$elm_geometry$Point3d$toMeters(start).y);
-			var xDiff = A3(
-				$elm$core$Basics$clamp,
-				-1,
-				1,
-				$ianmackenzie$elm_geometry$Point3d$toMeters(destination).x - $ianmackenzie$elm_geometry$Point3d$toMeters(start).x);
-			var newStart = $ianmackenzie$elm_geometry$Point3d$fromMeters(
-				$ianmackenzie$elm_geometry$Vector3d$toMeters(
-					A2(
-						$ianmackenzie$elm_geometry$Vector3d$plus,
-						A2(
-							$ianmackenzie$elm_geometry$Vector3d$from,
-							$ianmackenzie$elm_geometry$Point3d$origin,
-							A3($ianmackenzie$elm_geometry$Point3d$meters, xDiff, yDiff, 0)),
-						A2($ianmackenzie$elm_geometry$Vector3d$from, $ianmackenzie$elm_geometry$Point3d$origin, start))));
-			return A2(
-				$elm$core$List$cons,
-				newStart,
-				A2($author$project$Main$shortestPath, newStart, destination));
-		}
-	});
-var $elm$core$List$sortWith = _List_sortWith;
 var $ianmackenzie$elm_geometry$Point2d$toPixels = function (_v0) {
 	var pointCoordinates = _v0.a;
 	return pointCoordinates;
@@ -11199,41 +11417,7 @@ var $author$project$Main$applyMouseDown = F2(
 						model.monsters));
 				if (attackingMonster.$ === 'Just') {
 					var monster = attackingMonster.a;
-					var monsterSide = A2(
-						$elm$core$Maybe$withDefault,
-						A2(
-							$author$project$Main$movePoint,
-							A3($ianmackenzie$elm_geometry$Vector3d$meters, 1, 0, 0),
-							destination),
-						$elm$core$List$head(
-							A2(
-								$elm$core$List$sortWith,
-								F2(
-									function (a, b) {
-										return A2(
-											$ianmackenzie$elm_units$Quantity$compare,
-											A2($ianmackenzie$elm_geometry$Point3d$distanceFrom, model.location, a),
-											A2($ianmackenzie$elm_geometry$Point3d$distanceFrom, model.location, b));
-									}),
-								_List_fromArray(
-									[
-										A2(
-										$author$project$Main$movePoint,
-										A3($ianmackenzie$elm_geometry$Vector3d$meters, 1, 0, 0),
-										destination),
-										A2(
-										$author$project$Main$movePoint,
-										A3($ianmackenzie$elm_geometry$Vector3d$meters, -1, 0, 0),
-										destination),
-										A2(
-										$author$project$Main$movePoint,
-										A3($ianmackenzie$elm_geometry$Vector3d$meters, 0, 1, 0),
-										destination),
-										A2(
-										$author$project$Main$movePoint,
-										A3($ianmackenzie$elm_geometry$Vector3d$meters, 0, -1, 0),
-										destination)
-									]))));
+					var monsterSide = A2($author$project$Main$closestSideOf, destination, model.location);
 					var newTravelPath = A2(
 						$elm$core$List$filter,
 						function (point) {
@@ -11438,6 +11622,188 @@ var $author$project$Main$generateAttackRound = A2(
 		$elm$random$Random$pair,
 		A2($elm$random$Random$int, 0, 1),
 		A2($elm$random$Random$int, 0, 1)));
+var $author$project$Main$SetNewMonsterTravelPaths = function (a) {
+	return {$: 'SetNewMonsterTravelPaths', a: a};
+};
+var $author$project$Main$addPoints = F2(
+	function (p1, p2) {
+		return $ianmackenzie$elm_geometry$Point3d$fromMeters(
+			$ianmackenzie$elm_geometry$Vector3d$toMeters(
+				A2(
+					$ianmackenzie$elm_geometry$Vector3d$plus,
+					A2($ianmackenzie$elm_geometry$Vector3d$from, $ianmackenzie$elm_geometry$Point3d$origin, p1),
+					A2($ianmackenzie$elm_geometry$Vector3d$from, $ianmackenzie$elm_geometry$Point3d$origin, p2))));
+	});
+var $elm$random$Random$listHelp = F4(
+	function (revList, n, gen, seed) {
+		listHelp:
+		while (true) {
+			if (n < 1) {
+				return _Utils_Tuple2(revList, seed);
+			} else {
+				var _v0 = gen(seed);
+				var value = _v0.a;
+				var newSeed = _v0.b;
+				var $temp$revList = A2($elm$core$List$cons, value, revList),
+					$temp$n = n - 1,
+					$temp$gen = gen,
+					$temp$seed = newSeed;
+				revList = $temp$revList;
+				n = $temp$n;
+				gen = $temp$gen;
+				seed = $temp$seed;
+				continue listHelp;
+			}
+		}
+	});
+var $elm$random$Random$list = F2(
+	function (n, _v0) {
+		var gen = _v0.a;
+		return $elm$random$Random$Generator(
+			function (seed) {
+				return A4($elm$random$Random$listHelp, _List_Nil, n, gen, seed);
+			});
+	});
+var $elm$random$Random$float = F2(
+	function (a, b) {
+		return $elm$random$Random$Generator(
+			function (seed0) {
+				var seed1 = $elm$random$Random$next(seed0);
+				var range = $elm$core$Basics$abs(b - a);
+				var n1 = $elm$random$Random$peel(seed1);
+				var n0 = $elm$random$Random$peel(seed0);
+				var lo = (134217727 & n1) * 1.0;
+				var hi = (67108863 & n0) * 1.0;
+				var val = ((hi * 134217728.0) + lo) / 9007199254740992.0;
+				var scaled = (val * range) + a;
+				return _Utils_Tuple2(
+					scaled,
+					$elm$random$Random$next(seed1));
+			});
+	});
+var $elm$random$Random$getByWeight = F3(
+	function (_v0, others, countdown) {
+		getByWeight:
+		while (true) {
+			var weight = _v0.a;
+			var value = _v0.b;
+			if (!others.b) {
+				return value;
+			} else {
+				var second = others.a;
+				var otherOthers = others.b;
+				if (_Utils_cmp(
+					countdown,
+					$elm$core$Basics$abs(weight)) < 1) {
+					return value;
+				} else {
+					var $temp$_v0 = second,
+						$temp$others = otherOthers,
+						$temp$countdown = countdown - $elm$core$Basics$abs(weight);
+					_v0 = $temp$_v0;
+					others = $temp$others;
+					countdown = $temp$countdown;
+					continue getByWeight;
+				}
+			}
+		}
+	});
+var $elm$core$List$sum = function (numbers) {
+	return A3($elm$core$List$foldl, $elm$core$Basics$add, 0, numbers);
+};
+var $elm$random$Random$weighted = F2(
+	function (first, others) {
+		var normalize = function (_v0) {
+			var weight = _v0.a;
+			return $elm$core$Basics$abs(weight);
+		};
+		var total = normalize(first) + $elm$core$List$sum(
+			A2($elm$core$List$map, normalize, others));
+		return A2(
+			$elm$random$Random$map,
+			A2($elm$random$Random$getByWeight, first, others),
+			A2($elm$random$Random$float, 0, total));
+	});
+var $author$project$Main$generateMonsterTravelPaths = function (monsters) {
+	return A2(
+		$elm$random$Random$generate,
+		$author$project$Main$SetNewMonsterTravelPaths,
+		A2(
+			$elm$random$Random$map,
+			function (maybePoints) {
+				var maybeDestinations = A3(
+					$elm$core$List$map2,
+					F2(
+						function (maybePoint, m) {
+							var _v3 = _Utils_Tuple2(maybePoint, m);
+							if ((_v3.a.$ === 'Just') && (_v3.b.$ === 'AliveMonster')) {
+								var point = _v3.a.a;
+								var monster = _v3.b.a;
+								return $elm$core$Maybe$Just(
+									A2($author$project$Main$addPoints, point, monster.respawnLocation));
+							} else {
+								return $elm$core$Maybe$Nothing;
+							}
+						}),
+					maybePoints,
+					monsters);
+				return A3(
+					$elm$core$List$map2,
+					F2(
+						function (mon, maybeDestination) {
+							var _v2 = _Utils_Tuple2(mon, maybeDestination);
+							if ((_v2.a.$ === 'AliveMonster') && (_v2.b.$ === 'Just')) {
+								var monster = _v2.a.a;
+								var destination = _v2.b.a;
+								return $elm$core$Maybe$Just(
+									A2($author$project$Main$shortestPath, monster.location, destination));
+							} else {
+								return $elm$core$Maybe$Nothing;
+							}
+						}),
+					monsters,
+					maybeDestinations);
+			},
+			A2(
+				$elm$random$Random$map,
+				function (points) {
+					return A2(
+						$elm$core$List$map,
+						function (_v0) {
+							var maybeX = _v0.a;
+							var y = _v0.b;
+							if (maybeX.$ === 'Nothing') {
+								return $elm$core$Maybe$Nothing;
+							} else {
+								var x = maybeX.a;
+								return $elm$core$Maybe$Just(
+									A3($ianmackenzie$elm_geometry$Point3d$meters, x, y, 0));
+							}
+						},
+						points);
+				},
+				A2(
+					$elm$random$Random$list,
+					$elm$core$List$length(monsters),
+					A2(
+						$elm$random$Random$pair,
+						A2(
+							$elm$random$Random$weighted,
+							_Utils_Tuple2(99, $elm$core$Maybe$Nothing),
+							_List_fromArray(
+								[
+									_Utils_Tuple2(
+									1,
+									$elm$core$Maybe$Just(-1)),
+									_Utils_Tuple2(
+									1,
+									$elm$core$Maybe$Just(0)),
+									_Utils_Tuple2(
+									1,
+									$elm$core$Maybe$Just(1))
+								])),
+						A2($elm$random$Random$int, -1, 1))))));
+};
 var $elm$core$Set$insert = F2(
 	function (key, _v0) {
 		var dict = _v0.a;
@@ -11819,7 +12185,7 @@ var $author$project$Main$update = F2(
 				var time = msg.a;
 				return _Utils_Tuple2(
 					A2($author$project$Main$applyAnimationFrame, time, model),
-					$elm$core$Platform$Cmd$none);
+					$author$project$Main$generateMonsterTravelPaths(model.monsters));
 			case 'MouseDown':
 				var mousePoint = msg.a;
 				return _Utils_Tuple2(
@@ -11851,12 +12217,46 @@ var $author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					A3($author$project$Main$applyAttackRound, playerDamage, monsterDamage, model),
 					$elm$core$Platform$Cmd$none);
-			default:
+			case 'SetAttackStyle':
 				var attackStyle = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{attackStyle: attackStyle}),
+					$elm$core$Platform$Cmd$none);
+			default:
+				var newMonsterTravelPaths = msg.a;
+				var newMonsters = A3(
+					$elm$core$List$map2,
+					F2(
+						function (mon, maybeTravelPath) {
+							var _v1 = _Utils_Tuple2(mon, maybeTravelPath);
+							if ((_v1.a.$ === 'AliveMonster') && (_v1.b.$ === 'Just')) {
+								var monster = _v1.a.a;
+								var travelPath = _v1.b.a;
+								var _v2 = model.state;
+								if ((_v2.$ === 'Fighting') && (_v2.a.$ === 'AliveMonster')) {
+									var fightingMonster = _v2.a.a;
+									return _Utils_eq(fightingMonster.id, monster.id) ? mon : $author$project$Main$AliveMonster(
+										_Utils_update(
+											monster,
+											{travelPath: travelPath}));
+								} else {
+									return $author$project$Main$AliveMonster(
+										_Utils_update(
+											monster,
+											{travelPath: travelPath}));
+								}
+							} else {
+								return mon;
+							}
+						}),
+					model.monsters,
+					newMonsterTravelPaths);
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{monsters: newMonsters}),
 					$elm$core$Platform$Cmd$none);
 		}
 	});
@@ -14438,7 +14838,8 @@ var $author$project$Main$view = function (model) {
 						A2($elm$html$Html$Attributes$style, 'border', '1px solid white'),
 						A2($elm$html$Html$Attributes$style, 'display', 'inline-block'),
 						A2($elm$html$Html$Attributes$style, 'position', 'relative'),
-						A2($elm$html$Html$Attributes$style, 'overflow', 'hidden')
+						A2($elm$html$Html$Attributes$style, 'overflow', 'hidden'),
+						A2($elm$html$Html$Attributes$style, 'user-select', 'none')
 					]),
 				_List_fromArray(
 					[
