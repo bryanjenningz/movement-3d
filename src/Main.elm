@@ -520,6 +520,7 @@ view model =
                     )
                     model.monsters
                 )
+            , viewPlayerText model
             , viewHealthBar (getCamera model)
                 model.health
                 model.maxHealth
@@ -597,6 +598,48 @@ playerColor state =
 
         Fighting _ ->
             Color.darkRed
+
+
+viewPlayerText : Model -> Html msg
+viewPlayerText model =
+    let
+        textPoint =
+            Point3d.Projection.toScreenSpace (getCamera model) screen model.location
+                |> Point2d.toPixels
+                |> (\pt -> { pt | x = pt.x - width / 2, y = pt.y - 10 })
+
+        width =
+            150
+    in
+    div
+        [ style "position" "absolute"
+        , style "left" (px textPoint.x)
+        , style "top" (px textPoint.y)
+        , style "width" (px width)
+        , style "text-align" "center"
+        , style "color" "white"
+        , style "font-size" "12px"
+        , style "font-weight" "bold"
+        ]
+        [ text (getStateText model) ]
+
+
+getStateText : Model -> String
+getStateText model =
+    case model.state of
+        Standing ->
+            case model.travelPath of
+                [] ->
+                    "Standing"
+
+                _ ->
+                    "Walking"
+
+        Attacking _ ->
+            "Attacking"
+
+        Fighting _ ->
+            "Fighting"
 
 
 viewMonster : Monster -> Scene3d.Entity Meters
