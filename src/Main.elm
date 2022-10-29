@@ -1,7 +1,6 @@
 module Main exposing (AttackStyle(..), Model, Monster, Msg(..), State(..), getCamera, init, main, screen, update)
 
 import Angle exposing (Angle)
-import Array exposing (Array)
 import Axis3d exposing (Axis3d)
 import Browser
 import Browser.Events exposing (onAnimationFrame, onKeyDown, onKeyUp, onMouseDown)
@@ -100,6 +99,8 @@ type alias Hit =
 
 type alias Monster =
     { id : Int
+    , name : String
+    , color : Color
     , location : Point3d Meters Meters
     , health : Int
     , maxHealth : Int
@@ -129,7 +130,7 @@ init () =
             , Point3d.meters 3 3 0
             , Point3d.meters 3 -3 0
             ]
-                |> List.indexedMap (\id monster -> Monster id monster 3 3 [])
+                |> List.indexedMap (\id monster -> Monster id "Goblin (level 2)" Color.darkPurple monster 3 3 [])
       , now = -1
       , attackStyle = AccuracyStyle
       , accuracyXp = 0
@@ -483,9 +484,7 @@ view model =
             [ Scene3d.unlit
                 { entities =
                     viewSquare (playerColor model.state) model.location
-                        :: List.map
-                            (\monster -> viewSquare Color.darkPurple monster.location)
-                            model.monsters
+                        :: List.map viewMonster model.monsters
                         ++ (List.indexedMap
                                 (\y tileRow ->
                                     List.indexedMap
@@ -526,6 +525,7 @@ view model =
                 model.maxHealth
                 model.location
             , viewHits (getCamera model) model.hits model.location
+            , div [] (List.map (viewMonsterText (getCamera model)) model.monsters)
             , div []
                 (List.map (\monster -> viewHits (getCamera model) monster.hits monster.location) model.monsters)
             ]
@@ -597,6 +597,40 @@ playerColor state =
 
         Fighting _ ->
             Color.darkRed
+
+
+viewMonster : Monster -> Scene3d.Entity Meters
+viewMonster monster =
+    viewSquare monster.color monster.location
+
+
+viewMonsterText : Camera3d Meters Meters -> Monster -> Html msg
+viewMonsterText camera monster =
+    let
+        textPoint =
+            Point3d.Projection.toScreenSpace camera screen monster.location
+                |> Point2d.toPixels
+                |> (\pt -> { pt | x = pt.x - width / 2, y = pt.y - 10 })
+
+        width =
+            150
+    in
+    div
+        [ style "position" "absolute"
+        , style "left" (px textPoint.x)
+        , style "top" (px textPoint.y)
+        , style "width" (px width)
+        , style "text-align" "center"
+        , style "color" "white"
+        , style "font-size" "12px"
+        , style "font-weight" "bold"
+        ]
+        [ text monster.name ]
+
+
+px : Float -> String
+px x =
+    String.fromFloat x ++ "px"
 
 
 viewSquare : Color -> Point3d Length.Meters coordinates -> Scene3d.Entity coordinates
