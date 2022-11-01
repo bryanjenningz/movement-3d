@@ -1023,42 +1023,23 @@ generateMonsterTravelPaths monsters =
             (\points ->
                 List.map
                     (\( maybeX, y ) ->
-                        case maybeX of
-                            Nothing ->
-                                Nothing
-
-                            Just x ->
-                                Just (Point3d.meters (toFloat x) (toFloat y) 0)
+                        Maybe.map (\x -> Point3d.meters (toFloat x) (toFloat y) 0) maybeX
                     )
                     points
             )
         |> Random.map
             (\maybePoints ->
-                let
-                    maybeDestinations =
-                        List.map2
-                            (\maybePoint m ->
-                                case ( maybePoint, m ) of
-                                    ( Just point, AliveMonster monster ) ->
-                                        Just <| addPoints point monster.respawnLocation
-
-                                    _ ->
-                                        Nothing
-                            )
-                            maybePoints
-                            monsters
-                in
                 List.map2
-                    (\mon maybeDestination ->
-                        case ( mon, maybeDestination ) of
-                            ( AliveMonster monster, Just destination ) ->
-                                Just (shortestPath monster.location destination)
+                    (\maybePoint m ->
+                        case ( maybePoint, m ) of
+                            ( Just point, AliveMonster monster ) ->
+                                Just (shortestPath monster.location (addPoints point monster.respawnLocation))
 
                             _ ->
                                 Nothing
                     )
+                    maybePoints
                     monsters
-                    maybeDestinations
             )
         |> Random.generate SetNewMonsterTravelPaths
 
