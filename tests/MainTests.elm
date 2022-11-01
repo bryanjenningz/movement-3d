@@ -239,3 +239,41 @@ animationFrame =
                         , monsters = [ Main.AliveMonster { travelingGoblin | location = Point3d.meters -2.95 3 0 } ]
                     }
         ]
+
+
+xyRange : Test
+xyRange =
+    describe "xyRange"
+        [ test "Gives a range of xy tuples based on the low and high values you pass in" <|
+            \_ ->
+                Expect.equal (Main.xyRange -1 1)
+                    [ ( -1, -1 ), ( 0, -1 ), ( 1, -1 ), ( -1, 0 ), ( 0, 0 ), ( 1, 0 ), ( -1, 1 ), ( 0, 1 ), ( 1, 1 ) ]
+        ]
+
+
+weightedXyRange : Test
+weightedXyRange =
+    describe "weightedXyRange"
+        [ test "Gives a range of weighted xy tuples" <|
+            \_ ->
+                Expect.equal (Main.weightedXyRange -1 1)
+                    [ ( 1, ( -1, -1 ) )
+                    , ( 1, ( 0, -1 ) )
+                    , ( 1, ( 1, -1 ) )
+                    , ( 1, ( -1, 0 ) )
+                    , ( 1, ( 0, 0 ) )
+                    , ( 1, ( 1, 0 ) )
+                    , ( 1, ( -1, 1 ) )
+                    , ( 1, ( 0, 1 ) )
+                    , ( 1, ( 1, 1 ) )
+                    ]
+        ]
+
+
+pointLocation : Test
+pointLocation =
+    describe "pointLocation"
+        [ test "Converts a 2d point into a 3d location" <|
+            \_ ->
+                Expect.equal (Main.pointLocation ( 1, 2 )) (Point3d.meters 1 2 0)
+        ]

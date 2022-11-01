@@ -1,4 +1,4 @@
-module Main exposing (Appearance(..), AttackStyle(..), Model, Monster(..), Msg(..), getCamera, init, main, screen, update)
+module Main exposing (Appearance(..), AttackStyle(..), Model, Monster(..), Msg(..), getCamera, init, main, pointLocation, screen, update, weightedXyRange, xyRange)
 
 import Angle exposing (Angle)
 import Axis3d exposing (Axis3d)
@@ -1019,20 +1019,27 @@ addPoints p1 p2 =
         |> Point3d.fromMeters
 
 
+xyRange : Int -> Int -> List ( Float, Float )
+xyRange low high =
+    List.range low high
+        |> List.concatMap (\y -> List.range low high |> List.map (\x -> ( toFloat x, toFloat y )))
+
+
+weightedXyRange : Int -> Int -> List ( Float, ( Float, Float ) )
+weightedXyRange low high =
+    xyRange low high |> List.map (\xy -> ( 1, xy ))
+
+
+pointLocation : ( Float, Float ) -> Location
+pointLocation ( x, y ) =
+    Point3d.meters x y 0
+
+
 generateMonsterTravelPaths : List Monster -> Cmd Msg
 generateMonsterTravelPaths monsters =
-    Random.pair
-        (Random.weighted ( 99, Nothing ) [ ( 1, Just -1 ), ( 1, Just 0 ), ( 1, Just 1 ) ])
-        (Random.int -1 1)
+    Random.weighted ( 300, Nothing ) (weightedXyRange -1 1 |> List.map (Tuple.mapSecond Just))
         |> Random.list (List.length monsters)
-        |> Random.map
-            (\points ->
-                List.map
-                    (\( maybeX, y ) ->
-                        Maybe.map (\x -> Point3d.meters (toFloat x) (toFloat y) 0) maybeX
-                    )
-                    points
-            )
+        |> Random.map (List.map (Maybe.map pointLocation))
         |> Random.map
             (\maybePoints ->
                 List.map2
