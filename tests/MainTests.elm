@@ -57,7 +57,7 @@ init =
             \_ ->
                 Expect.equal (Main.init ())
                     ( { location = Point3d.meters 0 0 0
-                      , state = Main.Standing
+                      , appearance = Main.Standing
                       , health = 10
                       , maxHealth = 10
                       , hits = []
@@ -128,7 +128,7 @@ mouseDown =
                             , Point3d.fromMeters { x = -2, y = -2, z = 0 }
                             , Point3d.fromMeters { x = -2, y = -3, z = 0 }
                             ]
-                        , state = Main.Attacking (Main.AliveMonster goblin2)
+                        , appearance = Main.Attacking (Main.AliveMonster goblin2)
                       }
                     , Cmd.none
                     )
@@ -142,7 +142,7 @@ mouseDown =
                         toMousePoint modelRightNextToMonster (Point3d.fromMeters { x = -3, y = -3, z = 0 })
                 in
                 Expect.equal (Main.update (Main.MouseDown mousePoint) modelRightNextToMonster)
-                    ( { modelRightNextToMonster | state = Main.Attacking (Main.AliveMonster goblin2) }
+                    ( { modelRightNextToMonster | appearance = Main.Attacking (Main.AliveMonster goblin2) }
                     , Cmd.none
                     )
         , test "Moves player to the monster's side if the player attacks while on top of the monster" <|
@@ -157,7 +157,7 @@ mouseDown =
                 Expect.equal (Main.update (Main.MouseDown mousePoint) modelOnTopOfMonster)
                     ( { modelOnTopOfMonster
                         | travelPath = [ Point3d.fromMeters { x = -2, y = -3, z = 0 } ]
-                        , state = Main.Attacking (Main.AliveMonster goblin2)
+                        , appearance = Main.Attacking (Main.AliveMonster goblin2)
                       }
                     , Cmd.none
                     )
@@ -184,7 +184,7 @@ mouseDown =
                             , Point3d.fromMeters { x = -2, y = -2, z = 0 }
                             , Point3d.fromMeters { x = -2, y = -3, z = 0 }
                             ]
-                        , state = Main.Attacking (Main.AliveMonster goblin2)
+                        , appearance = Main.Attacking (Main.AliveMonster goblin2)
                       }
                     , Cmd.none
                     )
@@ -200,7 +200,7 @@ animationFrame =
                     attackingModel =
                         { initialModel
                             | location = Point3d.fromMeters { x = -3, y = -2, z = 0 }
-                            , state = Main.Attacking (Main.AliveMonster attackingMonster)
+                            , appearance = Main.Attacking (Main.AliveMonster attackingMonster)
                             , now = 0
                         }
 
@@ -208,14 +208,14 @@ animationFrame =
                         { goblin | id = 1, location = Point3d.fromMeters { x = -3, y = -3, z = 0 } }
                 in
                 Expect.equal (Main.update (Main.AnimationFrame 0) attackingModel |> Tuple.first)
-                    { attackingModel | state = Main.Fighting (Main.AliveMonster attackingMonster) }
+                    { attackingModel | appearance = Main.Fighting (Main.AliveMonster attackingMonster) }
         , test "Nothing changes when state is Fighting" <|
             \_ ->
                 let
                     attackingModel =
                         { initialModel
                             | location = Point3d.fromMeters { x = -3, y = -2, z = 0 }
-                            , state = Main.Fighting (Main.AliveMonster attackingMonster)
+                            , appearance = Main.Fighting (Main.AliveMonster attackingMonster)
                             , now = 0
                         }
 

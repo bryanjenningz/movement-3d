@@ -1,4 +1,4 @@
-module Main exposing (AttackStyle(..), Model, Monster(..), Msg(..), State(..), getCamera, init, main, screen, update)
+module Main exposing (Appearance(..), AttackStyle(..), Model, Monster(..), Msg(..), getCamera, init, main, screen, update)
 
 import Angle exposing (Angle)
 import Axis3d exposing (Axis3d)
@@ -68,28 +68,37 @@ toGameMapTile defaultTile tileStr =
 
 
 type alias Model =
-    { location : Point3d Meters Meters
-    , state : State
+    -- Global state
+    { now : Int
+    , cameraAngle : Angle
+    , keysDown : Set String
+
+    -- Player state
+    , location : Location
+    , appearance : Appearance
     , health : Int
     , maxHealth : Int
     , hits : List Hit
     , travelPath : TravelPath
-    , cameraAngle : Angle
-    , keysDown : Set String
-    , monsters : List Monster
-    , now : Int
     , attackStyle : AttackStyle
     , accuracyXp : Int
     , strengthXp : Int
     , defenseXp : Int
+
+    -- Monster state
+    , monsters : List Monster
     }
 
 
+type alias Location =
+    Point3d Meters Meters
+
+
 type alias TravelPath =
-    List (Point3d Meters Meters)
+    List Location
 
 
-type State
+type Appearance
     = Standing
     | Attacking Monster
     | Fighting Monster
@@ -106,8 +115,8 @@ type Monster
         { id : Int
         , name : String
         , color : Color
-        , respawnLocation : Point3d Meters Meters
-        , location : Point3d Meters Meters
+        , respawnLocation : Location
+        , location : Location
         , health : Int
         , maxHealth : Int
         , hits : List Hit
@@ -117,7 +126,7 @@ type Monster
         { id : Int
         , name : String
         , color : Color
-        , respawnLocation : Point3d Meters Meters
+        , respawnLocation : Location
         , maxHealth : Int
         , hits : List Hit
         , respawnAt : Int
@@ -133,7 +142,7 @@ type AttackStyle
 init : () -> ( Model, Cmd Msg )
 init () =
     ( { location = Point3d.meters 0 0 0
-      , state = Standing
+      , appearance = Standing
       , health = 10
       , maxHealth = 10
       , hits = []
@@ -212,7 +221,7 @@ update msg model =
                         (\mon maybeTravelPath ->
                             case ( mon, maybeTravelPath ) of
                                 ( AliveMonster monster, Just travelPath ) ->
-                                    case model.state of
+                                    case model.appearance of
                                         Fighting (AliveMonster fightingMonster) ->
                                             if fightingMonster.id == monster.id then
                                                 mon
@@ -232,10 +241,10 @@ update msg model =
             ( { model | monsters = newMonsters }, Cmd.none )
 
 
-updateLocationTravelPath : Point3d Meters Meters -> TravelPath -> ( Point3d Meters Meters, TravelPath )
+updateLocationTravelPath : Location -> TravelPath -> ( Location, TravelPath )
 updateLocationTravelPath location travelPath =
     let
-        calculateNewLocation : Point3d Meters Meters -> Point3d Meters Meters
+        calculateNewLocation : Location -> Location
         calculateNewLocation destination =
             Vector3d.from location destination
                 |> (\path ->
@@ -266,7 +275,7 @@ updateLocationTravelPath location travelPath =
                 ( calculateNewLocation destination, travelPath )
 
 
-closestSideOf : Point3d Meters Meters -> Point3d Meters Meters -> Point3d Meters Meters
+closestSideOf : Location -> Location -> Location
 closestSideOf destination fromLocation =
     [ movePoint (Vector3d.meters 1 0 0) destination
     , movePoint (Vector3d.meters -1 0 0) destination
@@ -286,7 +295,7 @@ applyAnimationFrame : Int -> Model -> Model
 applyAnimationFrame time model =
     let
         ( newLocation, newTravelPath ) =
-            case model.state of
+            case model.appearance of
                 Attacking (AliveMonster monster) ->
                     let
                         destination =
@@ -313,12 +322,12 @@ applyAnimationFrame time model =
                     updateLocationTravelPath model.location model.travelPath
 
         newState =
-            case ( newTravelPath, model.state ) of
+            case ( newTravelPath, model.appearance ) of
                 ( [], Attacking monster ) ->
                     Fighting monster
 
                 _ ->
-                    model.state
+                    model.appearance
 
         newHits =
             List.filter (\hit -> hit.disappearTime > time) model.hits
@@ -337,7 +346,7 @@ applyAnimationFrame time model =
                                     | hits = List.filter (\hit -> hit.disappearTime > time) monster.hits
                                     , location = newMonsterLocation
                                     , travelPath =
-                                        case model.state of
+                                        case model.appearance of
                                             Fighting (AliveMonster fightingMonster) ->
                                                 if monster.id == fightingMonster.id then
                                                     List.take 1 newMonsterTravelPath
@@ -372,7 +381,7 @@ applyAnimationFrame time model =
             { model
                 | location = newLocation
                 , travelPath = newTravelPath
-                , state = newState
+                , appearance = newState
                 , hits = newHits
                 , monsters = newMonsters
                 , now = time
@@ -402,7 +411,7 @@ applyMouseDown mousePoint model =
         mouseAxis =
             Camera3d.ray (getCamera model) screen mousePoint
 
-        mousePointXyPlane : Maybe (Point3d Meters Meters)
+        mousePointXyPlane : Maybe Location
         mousePointXyPlane =
             Axis3d.intersectionWithPlane Plane3d.xy mouseAxis
                 |> Maybe.map (mapPoint (round >> toFloat))
@@ -446,7 +455,7 @@ applyMouseDown mousePoint model =
                                 (start :: shortestPath start monsterSide)
                                     |> List.filter (\point -> point /= model.location)
                         in
-                        { model | travelPath = newTravelPath, state = Attacking monster }
+                        { model | travelPath = newTravelPath, appearance = Attacking monster }
 
                     Nothing ->
                         { model
@@ -457,7 +466,7 @@ applyMouseDown mousePoint model =
 
                                     path ->
                                         path
-                            , state = Standing
+                            , appearance = Standing
                         }
 
 
@@ -469,7 +478,7 @@ respawnTime =
 
 applyAttackRound : Int -> Int -> Model -> Model
 applyAttackRound playerDamage monsterDamage model =
-    case model.state of
+    case model.appearance of
         Fighting (AliveMonster fightingMonster) ->
             let
                 newMonsters =
@@ -530,7 +539,7 @@ applyAttackRound playerDamage monsterDamage model =
                     }
                         :: model.hits
                 , monsters = newMonsters
-                , state =
+                , appearance =
                     case
                         List.filter
                             (\monster ->
@@ -573,7 +582,7 @@ applyAttackRound playerDamage monsterDamage model =
             model
 
 
-shortestPath : Point3d Meters coordinates -> Point3d Meters coordinates -> TravelPath
+shortestPath : Location -> Location -> TravelPath
 shortestPath start destination =
     if start == destination then
         []
@@ -635,7 +644,7 @@ screen =
         }
 
 
-mapPoint : (Float -> Float) -> Point3d Meters coordinates -> Point3d Meters coordinates
+mapPoint : (Float -> Float) -> Location -> Location
 mapPoint f point =
     point
         |> Point3d.toMeters
@@ -675,7 +684,7 @@ view model =
                         gameMapTiles
                         |> List.concat
                     )
-                        ++ (viewSquare (playerColor model.state) model.location
+                        ++ (viewSquare (playerColor model.appearance) model.location
                                 :: List.map viewMonster model.monsters
                            )
                 , camera = getCamera model
@@ -730,7 +739,7 @@ redDamage =
     "#d33030"
 
 
-viewHits : Camera3d Meters Meters -> List Hit -> Point3d Meters Meters -> Html msg
+viewHits : Camera3d Meters Meters -> List Hit -> Location -> Html msg
 viewHits camera hits point =
     let
         { x, y } =
@@ -765,7 +774,7 @@ viewHits camera hits point =
                 [ div [] [ text (String.fromInt amount) ] ]
 
 
-movePoint : Vector3d Meters Meters -> Point3d Meters Meters -> Point3d Meters Meters
+movePoint : Vector3d Meters Meters -> Location -> Location
 movePoint movement point =
     point
         |> Point3d.toMeters
@@ -775,7 +784,7 @@ movePoint movement point =
         |> Point3d.fromMeters
 
 
-playerColor : State -> Color
+playerColor : Appearance -> Color
 playerColor state =
     case state of
         Standing ->
@@ -814,7 +823,7 @@ viewPlayerText model =
 
 getStateText : Model -> String
 getStateText model =
-    case model.state of
+    case model.appearance of
         Standing ->
             case model.travelPath of
                 [] ->
@@ -883,7 +892,7 @@ viewSquare color point =
         (Point3d.translateBy (Vector3d.meters -0.5 0.5 0) point)
 
 
-viewHealthBar : Camera3d Meters Meters -> Int -> Int -> Point3d Meters Meters -> Html msg
+viewHealthBar : Camera3d Meters Meters -> Int -> Int -> Location -> Html msg
 viewHealthBar camera health maxHealth point =
     let
         healthBarLocation =
@@ -975,7 +984,7 @@ subscriptions model =
             )
         , onAnimationFrame (Time.posixToMillis >> AnimationFrame)
         ]
-            ++ (case model.state of
+            ++ (case model.appearance of
                     Fighting _ ->
                         [ Time.every 1000 (\_ -> GenerateAttackRound) ]
 
@@ -990,7 +999,7 @@ generateAttackRound =
         (Random.pair (Random.int 0 1) (Random.int 0 1))
 
 
-addPoints : Point3d Meters Meters -> Point3d Meters Meters -> Point3d Meters Meters
+addPoints : Location -> Location -> Location
 addPoints p1 p2 =
     Vector3d.plus (Vector3d.from Point3d.origin p1) (Vector3d.from Point3d.origin p2)
         |> Vector3d.toMeters
