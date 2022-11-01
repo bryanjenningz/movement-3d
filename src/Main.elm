@@ -111,26 +111,32 @@ type alias Hit =
 
 
 type Monster
-    = AliveMonster
-        { id : Int
-        , name : String
-        , color : Color
-        , respawnLocation : Location
-        , location : Location
-        , health : Int
-        , maxHealth : Int
-        , hits : List Hit
-        , travelPath : TravelPath
-        }
-    | DeadMonster
-        { id : Int
-        , name : String
-        , color : Color
-        , respawnLocation : Location
-        , maxHealth : Int
-        , hits : List Hit
-        , respawnAt : Int
-        }
+    = AliveMonster AliveMonsterState
+    | DeadMonster DeadMonsterState
+
+
+type alias AliveMonsterState =
+    { id : Int
+    , name : String
+    , color : Color
+    , respawnLocation : Location
+    , location : Location
+    , health : Int
+    , maxHealth : Int
+    , hits : List Hit
+    , travelPath : TravelPath
+    }
+
+
+type alias DeadMonsterState =
+    { id : Int
+    , name : String
+    , color : Color
+    , respawnLocation : Location
+    , maxHealth : Int
+    , hits : List Hit
+    , respawnAt : Int
+    }
 
 
 type AttackStyle
