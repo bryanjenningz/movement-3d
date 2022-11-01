@@ -141,42 +141,49 @@ type AttackStyle
 
 init : () -> ( Model, Cmd Msg )
 init () =
-    ( { location = Point3d.meters 0 0 0
+    ( -- Global state
+      { now = -1
+      , cameraAngle = Angle.turns 0
+      , keysDown = Set.empty
+
+      -- Player state
+      , location = Point3d.meters 0 0 0
       , appearance = Standing
       , health = 10
       , maxHealth = 10
       , hits = []
       , travelPath = []
-      , cameraAngle = Angle.turns 0
-      , keysDown = Set.empty
+      , attackStyle = AccuracyStyle
+      , accuracyXp = 0
+      , strengthXp = 0
+      , defenseXp = 0
+
+      -- Monster state
       , monsters =
             [ Point3d.meters -3 3 0
             , Point3d.meters -3 -3 0
             , Point3d.meters 3 3 0
             , Point3d.meters 3 -3 0
             ]
-                |> List.indexedMap
-                    (\id location ->
-                        AliveMonster
-                            { id = id
-                            , name = "Goblin (level 2)"
-                            , color = Color.darkPurple
-                            , respawnLocation = location
-                            , location = location
-                            , health = 3
-                            , maxHealth = 3
-                            , hits = []
-                            , travelPath = []
-                            }
-                    )
-      , now = -1
-      , attackStyle = AccuracyStyle
-      , accuracyXp = 0
-      , strengthXp = 0
-      , defenseXp = 0
+                |> List.indexedMap initGoblin
       }
     , Cmd.none
     )
+
+
+initGoblin : Int -> Location -> Monster
+initGoblin id location =
+    AliveMonster
+        { id = id
+        , name = "Goblin (level 2)"
+        , color = Color.darkPurple
+        , respawnLocation = location
+        , location = location
+        , health = 3
+        , maxHealth = 3
+        , hits = []
+        , travelPath = []
+        }
 
 
 type Msg
