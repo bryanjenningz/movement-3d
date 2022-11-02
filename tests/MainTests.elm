@@ -283,6 +283,19 @@ shortestPath =
                       , Point3d.fromMeters { x = -0.1, y = -1.2, z = 0 }
                       ]
                     ]
+        , test "Gives the shortest path between 2 points less than 1 space away" <|
+            \_ ->
+                Expect.equalLists
+                    [ Main.shortestPath (Point3d.meters 0 0 0) (Point3d.meters 0 0.5 0)
+                    , Main.shortestPath (Point3d.meters 1.1 0 0) (Point3d.meters 1.1 0.3 0)
+                    , Main.shortestPath (Point3d.meters 1.1 2.2 0) (Point3d.meters 1 2.3 0)
+                    , Main.shortestPath (Point3d.meters -1.1 -2.2 0) (Point3d.meters -1.2 -2 0)
+                    ]
+                    [ [ Point3d.fromMeters { x = 0, y = 0.5, z = 0 } ]
+                    , [ Point3d.fromMeters { x = 1.1, y = 0.3, z = 0 } ]
+                    , [ Point3d.fromMeters { x = 1, y = 2.3, z = 0 } ]
+                    , [ Point3d.fromMeters { x = -1.2, y = -2, z = 0 } ]
+                    ]
         ]
 
 
