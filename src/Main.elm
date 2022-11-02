@@ -4,6 +4,7 @@ module Main exposing
     , Model
     , Monster(..)
     , Msg(..)
+    , findAliveMonster
     , getCamera
     , init
     , main
@@ -152,6 +153,25 @@ type alias DeadMonsterState =
     , hits : List Hit
     , respawnAt : Int
     }
+
+
+findAliveMonster : Int -> List Monster -> Maybe AliveMonsterState
+findAliveMonster monsterId monsters =
+    List.filterMap
+        (\monster ->
+            case monster of
+                AliveMonster aliveMonster ->
+                    if aliveMonster.id == monsterId then
+                        Just aliveMonster
+
+                    else
+                        Nothing
+
+                DeadMonster _ ->
+                    Nothing
+        )
+        monsters
+        |> List.head
 
 
 type AttackStyle
@@ -568,24 +588,12 @@ applyAttackRound playerDamage monsterDamage model =
                         :: model.hits
                 , monsters = newMonsters
                 , appearance =
-                    case
-                        List.filter
-                            (\monster ->
-                                case monster of
-                                    AliveMonster { id } ->
-                                        id == fightingMonster.id
-
-                                    DeadMonster _ ->
-                                        False
-                            )
-                            newMonsters
-                            |> List.head
-                    of
+                    case findAliveMonster fightingMonster.id newMonsters of
                         Nothing ->
                             Standing
 
                         Just newFightingMonster ->
-                            Fighting newFightingMonster
+                            Fighting (AliveMonster newFightingMonster)
                 , accuracyXp =
                     if model.attackStyle == AccuracyStyle then
                         model.accuracyXp + monsterDamage

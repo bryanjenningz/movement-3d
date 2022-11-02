@@ -50,6 +50,14 @@ goblin4 =
     }
 
 
+allGoblins =
+    [ Main.AliveMonster goblin
+    , Main.AliveMonster goblin2
+    , Main.AliveMonster goblin3
+    , Main.AliveMonster goblin4
+    ]
+
+
 init : Test
 init =
     describe "init"
@@ -296,6 +304,24 @@ shortestPath =
                     , [ Point3d.fromMeters { x = 1, y = 2.3, z = 0 } ]
                     , [ Point3d.fromMeters { x = -1.2, y = -2, z = 0 } ]
                     ]
+        ]
+
+
+findAliveMonster : Test
+findAliveMonster =
+    describe "findAliveMonster"
+        [ test "Finds the alive monster with the id you pass in" <|
+            \_ ->
+                Expect.equalLists
+                    [ Main.findAliveMonster 0 []
+                    , Main.findAliveMonster 0 allGoblins
+                    , Main.findAliveMonster 1 allGoblins
+                    , Main.findAliveMonster 2 allGoblins
+                    , Main.findAliveMonster 3 allGoblins
+                    , Main.findAliveMonster 4 allGoblins
+                    , Main.findAliveMonster 0 (List.reverse allGoblins)
+                    ]
+                    [ Nothing, Just goblin, Just goblin2, Just goblin3, Just goblin4, Nothing, Just goblin ]
         ]
 
 
