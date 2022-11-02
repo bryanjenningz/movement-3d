@@ -494,7 +494,7 @@ ${variant}`;
   var VERSION = "1.0.2";
   var TARGET_NAME = "My target name";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1667045407561"
+    "1667372337760"
   );
   var ORIGINAL_COMPILATION_MODE = "standard";
   var WEBSOCKET_PORT = "44269";
@@ -9179,21 +9179,26 @@ var $elm$core$Task$perform = F2(
 	});
 var $elm$browser$Browser$element = _Browser_element;
 var $author$project$Main$AccuracyStyle = {$: 'AccuracyStyle'};
-var $author$project$Main$AliveMonster = function (a) {
-	return {$: 'AliveMonster', a: a};
-};
 var $author$project$Main$Standing = {$: 'Standing'};
-var $avh4$elm_color$Color$RgbaSpace = F4(
-	function (a, b, c, d) {
-		return {$: 'RgbaSpace', a: a, b: b, c: c, d: d};
-	});
-var $avh4$elm_color$Color$darkPurple = A4($avh4$elm_color$Color$RgbaSpace, 92 / 255, 53 / 255, 102 / 255, 1.0);
 var $elm$core$Set$Set_elm_builtin = function (a) {
 	return {$: 'Set_elm_builtin', a: a};
 };
 var $elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
 var $elm$core$Dict$empty = $elm$core$Dict$RBEmpty_elm_builtin;
 var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
+var $author$project$Main$AliveMonster = function (a) {
+	return {$: 'AliveMonster', a: a};
+};
+var $avh4$elm_color$Color$RgbaSpace = F4(
+	function (a, b, c, d) {
+		return {$: 'RgbaSpace', a: a, b: b, c: c, d: d};
+	});
+var $avh4$elm_color$Color$darkPurple = A4($avh4$elm_color$Color$RgbaSpace, 92 / 255, 53 / 255, 102 / 255, 1.0);
+var $author$project$Main$initGoblin = F2(
+	function (id, location) {
+		return $author$project$Main$AliveMonster(
+			{color: $avh4$elm_color$Color$darkPurple, health: 3, hits: _List_Nil, id: id, location: location, maxHealth: 3, name: 'Goblin (level 2)', respawnLocation: location, travelPath: _List_Nil});
+	});
 var $ianmackenzie$elm_geometry$Geometry$Types$Point3d = function (a) {
 	return {$: 'Point3d', a: a};
 };
@@ -9221,6 +9226,7 @@ var $author$project$Main$init = function (_v0) {
 	return _Utils_Tuple2(
 		{
 			accuracyXp: 0,
+			appearance: $author$project$Main$Standing,
 			attackStyle: $author$project$Main$AccuracyStyle,
 			cameraAngle: $ianmackenzie$elm_units$Angle$turns(0),
 			defenseXp: 0,
@@ -9231,11 +9237,7 @@ var $author$project$Main$init = function (_v0) {
 			maxHealth: 10,
 			monsters: A2(
 				$elm$core$List$indexedMap,
-				F2(
-					function (id, location) {
-						return $author$project$Main$AliveMonster(
-							{color: $avh4$elm_color$Color$darkPurple, health: 3, hits: _List_Nil, id: id, location: location, maxHealth: 3, name: 'Goblin (level 2)', respawnLocation: location, travelPath: _List_Nil});
-					}),
+				$author$project$Main$initGoblin,
 				_List_fromArray(
 					[
 						A3($ianmackenzie$elm_geometry$Point3d$meters, -3, 3, 0),
@@ -9244,7 +9246,6 @@ var $author$project$Main$init = function (_v0) {
 						A3($ianmackenzie$elm_geometry$Point3d$meters, 3, -3, 0)
 					])),
 			now: -1,
-			state: $author$project$Main$Standing,
 			strengthXp: 0,
 			travelPath: _List_Nil
 		},
@@ -10052,7 +10053,7 @@ var $author$project$Main$subscriptions = function (model) {
 					A2($elm$core$Basics$composeR, $elm$time$Time$posixToMillis, $author$project$Main$AnimationFrame))
 				]),
 			function () {
-				var _v0 = model.state;
+				var _v0 = model.appearance;
 				if (_v0.$ === 'Fighting') {
 					return _List_fromArray(
 						[
@@ -10067,9 +10068,6 @@ var $author$project$Main$subscriptions = function (model) {
 					return _List_Nil;
 				}
 			}()));
-};
-var $author$project$Main$DeadMonster = function (a) {
-	return {$: 'DeadMonster', a: a};
 };
 var $author$project$Main$Fighting = function (a) {
 	return {$: 'Fighting', a: a};
@@ -10216,7 +10214,6 @@ var $elm$core$List$filter = F2(
 			_List_Nil,
 			list);
 	});
-var $elm$core$Basics$ge = _Utils_ge;
 var $ianmackenzie$elm_units$Angle$inRadians = function (_v0) {
 	var numRadians = _v0.a;
 	return numRadians;
@@ -10237,6 +10234,15 @@ var $elm$core$Set$member = F2(
 	function (key, _v0) {
 		var dict = _v0.a;
 		return A2($elm$core$Dict$member, key, dict);
+	});
+var $author$project$Main$DeadMonster = function (a) {
+	return {$: 'DeadMonster', a: a};
+};
+var $elm$core$Basics$ge = _Utils_ge;
+var $author$project$Main$respawnMonster = F2(
+	function (time, monster) {
+		return (_Utils_cmp(time, monster.respawnAt) > -1) ? $author$project$Main$AliveMonster(
+			{color: monster.color, health: monster.maxHealth, hits: _List_Nil, id: monster.id, location: monster.respawnLocation, maxHealth: monster.maxHealth, name: monster.name, respawnLocation: monster.respawnLocation, travelPath: _List_Nil}) : $author$project$Main$DeadMonster(monster);
 	});
 var $elm$core$Basics$clamp = F3(
 	function (low, high, number) {
@@ -10531,9 +10537,9 @@ var $author$project$Main$applyAnimationFrame = F2(
 									monster.hits),
 								location: newMonsterLocation,
 								travelPath: function () {
-									var _v5 = model.state;
-									if ((_v5.$ === 'Fighting') && (_v5.a.$ === 'AliveMonster')) {
-										var fightingMonster = _v5.a.a;
+									var _v5 = model.appearance;
+									if (_v5.$ === 'Fighting') {
+										var fightingMonster = _v5.a;
 										return _Utils_eq(monster.id, fightingMonster.id) ? A2($elm$core$List$take, 1, newMonsterTravelPath) : newMonsterTravelPath;
 									} else {
 										return newMonsterTravelPath;
@@ -10542,8 +10548,7 @@ var $author$project$Main$applyAnimationFrame = F2(
 							}));
 				} else {
 					var monster = m.a;
-					return (_Utils_cmp(time, monster.respawnAt) > -1) ? $author$project$Main$AliveMonster(
-						{color: monster.color, health: monster.maxHealth, hits: _List_Nil, id: monster.id, location: monster.respawnLocation, maxHealth: monster.maxHealth, name: monster.name, respawnLocation: monster.respawnLocation, travelPath: _List_Nil}) : $author$project$Main$DeadMonster(monster);
+					return A2($author$project$Main$respawnMonster, time, monster);
 				}
 			},
 			model.monsters);
@@ -10554,60 +10559,48 @@ var $author$project$Main$applyAnimationFrame = F2(
 			},
 			model.hits);
 		var _v0 = function () {
-			var _v1 = model.state;
-			_v1$2:
-			while (true) {
-				switch (_v1.$) {
-					case 'Attacking':
-						if (_v1.a.$ === 'AliveMonster') {
-							var monster = _v1.a.a;
-							var destination = A2(
-								$elm$core$Maybe$withDefault,
-								monster.location,
-								$elm$core$List$head(monster.travelPath));
-							var monsterSide = A2($author$project$Main$closestSideOf, destination, model.location);
-							return A2(
-								$author$project$Main$updateLocationTravelPath,
-								model.location,
-								A2($author$project$Main$shortestPath, model.location, monsterSide));
-						} else {
-							break _v1$2;
-						}
-					case 'Fighting':
-						if (_v1.a.$ === 'AliveMonster') {
-							var monster = _v1.a.a;
-							var destination = A2(
-								$elm$core$Maybe$withDefault,
-								monster.location,
-								$elm$core$List$head(monster.travelPath));
-							var monsterSide = A2($author$project$Main$closestSideOf, destination, model.location);
-							return A2(
-								$author$project$Main$updateLocationTravelPath,
-								model.location,
-								A2($author$project$Main$shortestPath, model.location, monsterSide));
-						} else {
-							break _v1$2;
-						}
-					default:
-						break _v1$2;
-				}
+			var _v1 = model.appearance;
+			switch (_v1.$) {
+				case 'Attacking':
+					var monster = _v1.a;
+					var destination = A2(
+						$elm$core$Maybe$withDefault,
+						monster.location,
+						$elm$core$List$head(monster.travelPath));
+					var monsterSide = A2($author$project$Main$closestSideOf, destination, model.location);
+					return A2(
+						$author$project$Main$updateLocationTravelPath,
+						model.location,
+						A2($author$project$Main$shortestPath, model.location, monsterSide));
+				case 'Fighting':
+					var monster = _v1.a;
+					var destination = A2(
+						$elm$core$Maybe$withDefault,
+						monster.location,
+						$elm$core$List$head(monster.travelPath));
+					var monsterSide = A2($author$project$Main$closestSideOf, destination, model.location);
+					return A2(
+						$author$project$Main$updateLocationTravelPath,
+						model.location,
+						A2($author$project$Main$shortestPath, model.location, monsterSide));
+				default:
+					return A2($author$project$Main$updateLocationTravelPath, model.location, model.travelPath);
 			}
-			return A2($author$project$Main$updateLocationTravelPath, model.location, model.travelPath);
 		}();
 		var newLocation = _v0.a;
 		var newTravelPath = _v0.b;
 		var newState = function () {
-			var _v2 = _Utils_Tuple2(newTravelPath, model.state);
+			var _v2 = _Utils_Tuple2(newTravelPath, model.appearance);
 			if ((!_v2.a.b) && (_v2.b.$ === 'Attacking')) {
 				var monster = _v2.b.a;
 				return $author$project$Main$Fighting(monster);
 			} else {
-				return model.state;
+				return model.appearance;
 			}
 		}();
 		var newModel = _Utils_update(
 			model,
-			{hits: newHits, location: newLocation, monsters: newMonsters, now: time, state: newState, travelPath: newTravelPath});
+			{appearance: newState, hits: newHits, location: newLocation, monsters: newMonsters, now: time, travelPath: newTravelPath});
 		return A2($elm$core$Set$member, 'ArrowLeft', model.keysDown) ? _Utils_update(
 			newModel,
 			{
@@ -10620,42 +10613,72 @@ var $author$project$Main$applyAnimationFrame = F2(
 	});
 var $author$project$Main$DefenseStyle = {$: 'DefenseStyle'};
 var $author$project$Main$StrengthStyle = {$: 'StrengthStyle'};
+var $author$project$Main$findAliveMonster = F2(
+	function (monsterId, monsters) {
+		return $elm$core$List$head(
+			A2(
+				$elm$core$List$filterMap,
+				function (monster) {
+					if (monster.$ === 'AliveMonster') {
+						var aliveMonster = monster.a;
+						return _Utils_eq(aliveMonster.id, monsterId) ? $elm$core$Maybe$Just(aliveMonster) : $elm$core$Maybe$Nothing;
+					} else {
+						return $elm$core$Maybe$Nothing;
+					}
+				},
+				monsters));
+	});
 var $author$project$Main$respawnTime = 20000;
+var $author$project$Main$updateAliveMonster = F3(
+	function (monsterId, updater, monsters) {
+		return A2(
+			$elm$core$List$map,
+			function (monster) {
+				if (monster.$ === 'AliveMonster') {
+					var aliveMonster = monster.a;
+					return _Utils_eq(aliveMonster.id, monsterId) ? updater(aliveMonster) : $author$project$Main$AliveMonster(aliveMonster);
+				} else {
+					var deadMonster = monster.a;
+					return $author$project$Main$DeadMonster(deadMonster);
+				}
+			},
+			monsters);
+	});
 var $author$project$Main$applyAttackRound = F3(
 	function (playerDamage, monsterDamage, model) {
-		var _v0 = model.state;
-		if ((_v0.$ === 'Fighting') && (_v0.a.$ === 'AliveMonster')) {
-			var fightingMonster = _v0.a.a;
+		var _v0 = model.appearance;
+		if (_v0.$ === 'Fighting') {
+			var fightingMonster = _v0.a;
 			var disappearTime = model.now + 500;
-			var newMonsters = A2(
-				$elm$core$List$map,
-				function (mon) {
-					if (mon.$ === 'AliveMonster') {
-						var monster = mon.a;
-						if (_Utils_eq(monster.id, fightingMonster.id)) {
-							var newHits = A2(
-								$elm$core$List$cons,
-								{amount: monsterDamage, disappearTime: disappearTime},
-								monster.hits);
-							var newHealth = monster.health - monsterDamage;
-							return (newHealth <= 0) ? $author$project$Main$DeadMonster(
-								{color: monster.color, hits: newHits, id: monster.id, maxHealth: monster.maxHealth, name: monster.name, respawnAt: model.now + $author$project$Main$respawnTime, respawnLocation: monster.respawnLocation}) : $author$project$Main$AliveMonster(
-								_Utils_update(
-									monster,
-									{health: newHealth, hits: newHits}));
-						} else {
-							return $author$project$Main$AliveMonster(monster);
-						}
-					} else {
-						var monster = mon.a;
-						return $author$project$Main$DeadMonster(monster);
-					}
+			var newMonsters = A3(
+				$author$project$Main$updateAliveMonster,
+				fightingMonster.id,
+				function (monster) {
+					var newHits = A2(
+						$elm$core$List$cons,
+						{amount: monsterDamage, disappearTime: disappearTime},
+						monster.hits);
+					var newHealth = monster.health - monsterDamage;
+					return (newHealth <= 0) ? $author$project$Main$DeadMonster(
+						{color: monster.color, id: monster.id, maxHealth: monster.maxHealth, name: monster.name, respawnAt: model.now + $author$project$Main$respawnTime, respawnLocation: monster.respawnLocation}) : $author$project$Main$AliveMonster(
+						_Utils_update(
+							monster,
+							{health: newHealth, hits: newHits}));
 				},
 				model.monsters);
 			return _Utils_update(
 				model,
 				{
 					accuracyXp: _Utils_eq(model.attackStyle, $author$project$Main$AccuracyStyle) ? (model.accuracyXp + monsterDamage) : model.accuracyXp,
+					appearance: function () {
+						var _v1 = A2($author$project$Main$findAliveMonster, fightingMonster.id, newMonsters);
+						if (_v1.$ === 'Nothing') {
+							return $author$project$Main$Standing;
+						} else {
+							var newFightingMonster = _v1.a;
+							return $author$project$Main$Fighting(newFightingMonster);
+						}
+					}(),
 					defenseXp: _Utils_eq(model.attackStyle, $author$project$Main$DefenseStyle) ? (model.defenseXp + monsterDamage) : model.defenseXp,
 					health: A2($elm$core$Basics$max, 1, model.health - playerDamage),
 					hits: A2(
@@ -10666,26 +10689,6 @@ var $author$project$Main$applyAttackRound = F3(
 						},
 						model.hits),
 					monsters: newMonsters,
-					state: function () {
-						var _v1 = $elm$core$List$head(
-							A2(
-								$elm$core$List$filter,
-								function (monster) {
-									if (monster.$ === 'AliveMonster') {
-										var id = monster.a.id;
-										return _Utils_eq(id, fightingMonster.id);
-									} else {
-										return false;
-									}
-								},
-								newMonsters));
-						if (_v1.$ === 'Nothing') {
-							return $author$project$Main$Standing;
-						} else {
-							var newFightingMonster = _v1.a;
-							return $author$project$Main$Fighting(newFightingMonster);
-						}
-					}(),
 					strengthXp: _Utils_eq(model.attackStyle, $author$project$Main$StrengthStyle) ? (model.strengthXp + monsterDamage) : model.strengthXp
 				});
 		} else {
@@ -11407,7 +11410,7 @@ var $author$project$Main$applyMouseDown = F2(
 								var monster = m.a;
 								return A3(
 									$ianmackenzie$elm_geometry$Point3d$equalWithin,
-									$ianmackenzie$elm_units$Length$meters(0.01),
+									$ianmackenzie$elm_units$Length$meters(0.5),
 									destination,
 									monster.location);
 							} else {
@@ -11415,8 +11418,8 @@ var $author$project$Main$applyMouseDown = F2(
 							}
 						},
 						model.monsters));
-				if (attackingMonster.$ === 'Just') {
-					var monster = attackingMonster.a;
+				if ((attackingMonster.$ === 'Just') && (attackingMonster.a.$ === 'AliveMonster')) {
+					var monster = attackingMonster.a.a;
 					var monsterSide = A2($author$project$Main$closestSideOf, destination, model.location);
 					var newTravelPath = A2(
 						$elm$core$List$filter,
@@ -11430,14 +11433,14 @@ var $author$project$Main$applyMouseDown = F2(
 					return _Utils_update(
 						model,
 						{
-							state: $author$project$Main$Attacking(monster),
+							appearance: $author$project$Main$Attacking(monster),
 							travelPath: newTravelPath
 						});
 				} else {
 					return _Utils_update(
 						model,
 						{
-							state: $author$project$Main$Standing,
+							appearance: $author$project$Main$Standing,
 							travelPath: function () {
 								var _v2 = A2($author$project$Main$shortestPath, start, destination);
 								if (!_v2.b) {
@@ -11664,6 +11667,19 @@ var $elm$random$Random$list = F2(
 				return A4($elm$random$Random$listHelp, _List_Nil, n, gen, seed);
 			});
 	});
+var $elm$core$Tuple$mapSecond = F2(
+	function (func, _v0) {
+		var x = _v0.a;
+		var y = _v0.b;
+		return _Utils_Tuple2(
+			x,
+			func(y));
+	});
+var $author$project$Main$pointLocation = function (_v0) {
+	var x = _v0.a;
+	var y = _v0.b;
+	return A3($ianmackenzie$elm_geometry$Point3d$meters, x, y, 0);
+};
 var $elm$random$Random$float = F2(
 	function (a, b) {
 		return $elm$random$Random$Generator(
@@ -11724,6 +11740,45 @@ var $elm$random$Random$weighted = F2(
 			A2($elm$random$Random$getByWeight, first, others),
 			A2($elm$random$Random$float, 0, total));
 	});
+var $elm$core$List$append = F2(
+	function (xs, ys) {
+		if (!ys.b) {
+			return xs;
+		} else {
+			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
+		}
+	});
+var $elm$core$List$concat = function (lists) {
+	return A3($elm$core$List$foldr, $elm$core$List$append, _List_Nil, lists);
+};
+var $elm$core$List$concatMap = F2(
+	function (f, list) {
+		return $elm$core$List$concat(
+			A2($elm$core$List$map, f, list));
+	});
+var $author$project$Main$xyRange = F2(
+	function (low, high) {
+		return A2(
+			$elm$core$List$concatMap,
+			function (y) {
+				return A2(
+					$elm$core$List$map,
+					function (x) {
+						return _Utils_Tuple2(x, y);
+					},
+					A2($elm$core$List$range, low, high));
+			},
+			A2($elm$core$List$range, low, high));
+	});
+var $author$project$Main$weightedXyRange = F2(
+	function (low, high) {
+		return A2(
+			$elm$core$List$map,
+			function (xy) {
+				return _Utils_Tuple2(1, xy);
+			},
+			A2($author$project$Main$xyRange, low, high));
+	});
 var $author$project$Main$generateMonsterTravelPaths = function (monsters) {
 	return A2(
 		$elm$random$Random$generate,
@@ -11731,78 +11786,40 @@ var $author$project$Main$generateMonsterTravelPaths = function (monsters) {
 		A2(
 			$elm$random$Random$map,
 			function (maybePoints) {
-				var maybeDestinations = A3(
+				return A3(
 					$elm$core$List$map2,
 					F2(
 						function (maybePoint, m) {
-							var _v3 = _Utils_Tuple2(maybePoint, m);
-							if ((_v3.a.$ === 'Just') && (_v3.b.$ === 'AliveMonster')) {
-								var point = _v3.a.a;
-								var monster = _v3.b.a;
+							var _v0 = _Utils_Tuple2(maybePoint, m);
+							if ((_v0.a.$ === 'Just') && (_v0.b.$ === 'AliveMonster')) {
+								var point = _v0.a.a;
+								var monster = _v0.b.a;
 								return $elm$core$Maybe$Just(
-									A2($author$project$Main$addPoints, point, monster.respawnLocation));
+									A2(
+										$author$project$Main$shortestPath,
+										monster.location,
+										A2($author$project$Main$addPoints, point, monster.respawnLocation)));
 							} else {
 								return $elm$core$Maybe$Nothing;
 							}
 						}),
 					maybePoints,
 					monsters);
-				return A3(
-					$elm$core$List$map2,
-					F2(
-						function (mon, maybeDestination) {
-							var _v2 = _Utils_Tuple2(mon, maybeDestination);
-							if ((_v2.a.$ === 'AliveMonster') && (_v2.b.$ === 'Just')) {
-								var monster = _v2.a.a;
-								var destination = _v2.b.a;
-								return $elm$core$Maybe$Just(
-									A2($author$project$Main$shortestPath, monster.location, destination));
-							} else {
-								return $elm$core$Maybe$Nothing;
-							}
-						}),
-					monsters,
-					maybeDestinations);
 			},
 			A2(
 				$elm$random$Random$map,
-				function (points) {
-					return A2(
-						$elm$core$List$map,
-						function (_v0) {
-							var maybeX = _v0.a;
-							var y = _v0.b;
-							if (maybeX.$ === 'Nothing') {
-								return $elm$core$Maybe$Nothing;
-							} else {
-								var x = maybeX.a;
-								return $elm$core$Maybe$Just(
-									A3($ianmackenzie$elm_geometry$Point3d$meters, x, y, 0));
-							}
-						},
-						points);
-				},
+				$elm$core$List$map(
+					$elm$core$Maybe$map($author$project$Main$pointLocation)),
 				A2(
 					$elm$random$Random$list,
 					$elm$core$List$length(monsters),
 					A2(
-						$elm$random$Random$pair,
+						$elm$random$Random$weighted,
+						_Utils_Tuple2(300, $elm$core$Maybe$Nothing),
 						A2(
-							$elm$random$Random$weighted,
-							_Utils_Tuple2(99, $elm$core$Maybe$Nothing),
-							_List_fromArray(
-								[
-									_Utils_Tuple2(
-									1,
-									$elm$core$Maybe$Just(-1)),
-									_Utils_Tuple2(
-									1,
-									$elm$core$Maybe$Just(0)),
-									_Utils_Tuple2(
-									1,
-									$elm$core$Maybe$Just(1))
-								])),
-						A2($elm$random$Random$int, -1, 1))))));
+							$elm$core$List$map,
+							$elm$core$Tuple$mapSecond($elm$core$Maybe$Just),
+							A2($author$project$Main$weightedXyRange, -1, 1)))))));
 };
 var $elm$core$Set$insert = F2(
 	function (key, _v0) {
@@ -12234,9 +12251,9 @@ var $author$project$Main$update = F2(
 							if ((_v1.a.$ === 'AliveMonster') && (_v1.b.$ === 'Just')) {
 								var monster = _v1.a.a;
 								var travelPath = _v1.b.a;
-								var _v2 = model.state;
-								if ((_v2.$ === 'Fighting') && (_v2.a.$ === 'AliveMonster')) {
-									var fightingMonster = _v2.a.a;
+								var _v2 = model.appearance;
+								if (_v2.$ === 'Fighting') {
+									var fightingMonster = _v2.a;
 									return _Utils_eq(fightingMonster.id, monster.id) ? mon : $author$project$Main$AliveMonster(
 										_Utils_update(
 											monster,
@@ -12260,17 +12277,6 @@ var $author$project$Main$update = F2(
 					$elm$core$Platform$Cmd$none);
 		}
 	});
-var $elm$core$List$append = F2(
-	function (xs, ys) {
-		if (!ys.b) {
-			return xs;
-		} else {
-			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
-		}
-	});
-var $elm$core$List$concat = function (lists) {
-	return A3($elm$core$List$foldr, $elm$core$List$append, _List_Nil, lists);
-};
 var $avh4$elm_color$Color$darkGray = A4($avh4$elm_color$Color$RgbaSpace, 186 / 255, 189 / 255, 182 / 255, 1.0);
 var $avh4$elm_color$Color$darkGreen = A4($avh4$elm_color$Color$RgbaSpace, 78 / 255, 154 / 255, 6 / 255, 1.0);
 var $elm$html$Html$div = _VirtualDom_node('div');
@@ -12337,11 +12343,6 @@ var $elm_explorations$webgl$WebGL$Internal$ClearColor = F4(
 		return {$: 'ClearColor', a: a, b: b, c: c, d: d};
 	});
 var $elm_explorations$webgl$WebGL$clearColor = $elm_explorations$webgl$WebGL$Internal$ClearColor;
-var $elm$core$List$concatMap = F2(
-	function (f, list) {
-		return $elm$core$List$concat(
-			A2($elm$core$List$map, f, list));
-	});
 var $elm_explorations$webgl$WebGL$Internal$Depth = function (a) {
 	return {$: 'Depth', a: a};
 };
@@ -13699,6 +13700,9 @@ var $author$project$Main$viewAttackStyle = function (model) {
 					]))
 			]));
 };
+var $author$project$Main$px = function (x) {
+	return $elm$core$String$fromFloat(x) + 'px';
+};
 var $ianmackenzie$elm_units$Quantity$ratio = F2(
 	function (_v0, _v1) {
 		var x = _v0.a;
@@ -13807,19 +13811,19 @@ var $author$project$Main$viewHealthBar = F4(
 					A2(
 					$elm$html$Html$Attributes$style,
 					'left',
-					$elm$core$String$fromFloat(healthBarLocation.x - (healthBarWidth / 2)) + 'px'),
+					$author$project$Main$px(healthBarLocation.x - (healthBarWidth / 2))),
 					A2(
 					$elm$html$Html$Attributes$style,
 					'top',
-					$elm$core$String$fromFloat(healthBarLocation.y) + 'px'),
+					$author$project$Main$px(healthBarLocation.y)),
 					A2(
 					$elm$html$Html$Attributes$style,
 					'width',
-					$elm$core$String$fromFloat(healthBarWidth) + 'px'),
+					$author$project$Main$px(healthBarWidth)),
 					A2(
 					$elm$html$Html$Attributes$style,
 					'height',
-					$elm$core$String$fromFloat(healthBarHeight) + 'px'),
+					$author$project$Main$px(healthBarHeight)),
 					A2($elm$html$Html$Attributes$style, 'background-color', $author$project$Main$redDamage)
 				]),
 			_List_fromArray(
@@ -13838,7 +13842,7 @@ var $author$project$Main$viewHealthBar = F4(
 							A2(
 							$elm$html$Html$Attributes$style,
 							'height',
-							$elm$core$String$fromFloat(healthBarHeight) + 'px'),
+							$author$project$Main$px(healthBarHeight)),
 							A2($elm$html$Html$Attributes$style, 'background-color', 'lime')
 						]),
 					_List_Nil)
@@ -13864,19 +13868,19 @@ var $author$project$Main$viewHits = F3(
 						A2(
 						$elm$html$Html$Attributes$style,
 						'left',
-						$elm$core$String$fromFloat(x - (width / 2)) + 'px'),
+						$author$project$Main$px(x - (width / 2))),
 						A2(
 						$elm$html$Html$Attributes$style,
 						'top',
-						$elm$core$String$fromFloat(y - (width / 2)) + 'px'),
+						$author$project$Main$px(y - (width / 2))),
 						A2(
 						$elm$html$Html$Attributes$style,
 						'width',
-						$elm$core$String$fromFloat(width) + 'px'),
+						$author$project$Main$px(width)),
 						A2(
 						$elm$html$Html$Attributes$style,
 						'height',
-						$elm$core$String$fromFloat(width) + 'px'),
+						$author$project$Main$px(width)),
 						A2($elm$html$Html$Attributes$style, 'background-color', $author$project$Main$redDamage),
 						A2($elm$html$Html$Attributes$style, 'color', 'white'),
 						A2($elm$html$Html$Attributes$style, 'display', 'flex'),
@@ -14701,9 +14705,6 @@ var $author$project$Main$viewMonster = function (mon) {
 		return $ianmackenzie$elm_3d_scene$Scene3d$nothing;
 	}
 };
-var $author$project$Main$px = function (x) {
-	return $elm$core$String$fromFloat(x) + 'px';
-};
 var $author$project$Main$viewMonsterText = F2(
 	function (camera, mon) {
 		if (mon.$ === 'AliveMonster') {
@@ -14747,7 +14748,7 @@ var $author$project$Main$viewMonsterText = F2(
 		}
 	});
 var $author$project$Main$getStateText = function (model) {
-	var _v0 = model.state;
+	var _v0 = model.appearance;
 	switch (_v0.$) {
 		case 'Standing':
 			var _v1 = model.travelPath;
@@ -14882,7 +14883,7 @@ var $author$project$Main$view = function (model) {
 									$elm$core$List$cons,
 									A2(
 										$author$project$Main$viewSquare,
-										$author$project$Main$playerColor(model.state),
+										$author$project$Main$playerColor(model.appearance),
 										model.location),
 									A2($elm$core$List$map, $author$project$Main$viewMonster, model.monsters)))
 						}),
