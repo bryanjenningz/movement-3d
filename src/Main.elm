@@ -10,6 +10,7 @@ module Main exposing
     , init
     , main
     , pointLocation
+    , respawnMonster
     , screen
     , shortestPath
     , update
@@ -192,6 +193,25 @@ updateAliveMonster monsterId updater monsters =
                     DeadMonster deadMonster
         )
         monsters
+
+
+respawnMonster : Int -> DeadMonsterState -> Monster
+respawnMonster time monster =
+    if time >= monster.respawnAt then
+        AliveMonster
+            { id = monster.id
+            , name = monster.name
+            , color = monster.color
+            , health = monster.maxHealth
+            , maxHealth = monster.maxHealth
+            , respawnLocation = monster.respawnLocation
+            , location = monster.respawnLocation
+            , hits = []
+            , travelPath = []
+            }
+
+    else
+        DeadMonster monster
 
 
 type AttackStyle
@@ -427,21 +447,7 @@ applyAnimationFrame time model =
                                 }
 
                         DeadMonster monster ->
-                            if time >= monster.respawnAt then
-                                AliveMonster
-                                    { id = monster.id
-                                    , name = monster.name
-                                    , color = monster.color
-                                    , health = monster.maxHealth
-                                    , maxHealth = monster.maxHealth
-                                    , respawnLocation = monster.respawnLocation
-                                    , location = monster.respawnLocation
-                                    , hits = []
-                                    , travelPath = []
-                                    }
-
-                            else
-                                DeadMonster monster
+                            respawnMonster time monster
                 )
                 model.monsters
 

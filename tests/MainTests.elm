@@ -50,6 +50,17 @@ goblin4 =
     }
 
 
+deadGoblin =
+    { id = 4
+    , name = goblin.name
+    , color = goblin.color
+    , respawnLocation = goblin.respawnLocation
+    , maxHealth = goblin.maxHealth
+    , hits = []
+    , respawnAt = 100
+    }
+
+
 allGoblins =
     [ Main.AliveMonster goblin
     , Main.AliveMonster goblin2
@@ -345,6 +356,23 @@ updateAliveMonster =
                     , allGoblins
                     , [ decrementHealth goblin ] ++ List.drop 1 allGoblins
                     , List.take 3 (List.reverse allGoblins) ++ [ decrementHealth goblin ]
+                    ]
+        ]
+
+
+respawnMonster : Test
+respawnMonster =
+    describe "respawnMonster"
+        [ test "Respawns monster if the respawn time has passed" <|
+            \_ ->
+                Expect.equalLists
+                    [ Main.respawnMonster 99 deadGoblin
+                    , Main.respawnMonster 100 deadGoblin
+                    , Main.respawnMonster 1000 deadGoblin
+                    ]
+                    [ Main.DeadMonster deadGoblin
+                    , Main.AliveMonster { goblin | id = 4 }
+                    , Main.AliveMonster { goblin | id = 4 }
                     ]
         ]
 
