@@ -13,6 +13,7 @@ import Set
 import Test exposing (Test, describe, test)
 
 
+goblin : Main.AliveMonsterState
 goblin =
     { health = 3
     , id = 0
@@ -26,6 +27,7 @@ goblin =
     }
 
 
+goblin2 : Main.AliveMonsterState
 goblin2 =
     { goblin
         | id = 1
@@ -34,6 +36,7 @@ goblin2 =
     }
 
 
+goblin3 : Main.AliveMonsterState
 goblin3 =
     { goblin
         | id = 2
@@ -42,6 +45,7 @@ goblin3 =
     }
 
 
+goblin4 : Main.AliveMonsterState
 goblin4 =
     { goblin
         | id = 3

@@ -508,7 +508,7 @@ applyMouseDown mousePoint model =
                             (\m ->
                                 case m of
                                     AliveMonster monster ->
-                                        Point3d.equalWithin (Length.meters 0.01) destination monster.location
+                                        Point3d.equalWithin (Length.meters 0.5) destination monster.location
 
                                     DeadMonster _ ->
                                         False
