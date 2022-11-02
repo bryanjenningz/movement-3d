@@ -772,10 +772,10 @@ viewHits camera hits point =
         Just { amount } ->
             div
                 [ style "position" "absolute"
-                , style "left" (String.fromFloat (x - width / 2) ++ "px")
-                , style "top" (String.fromFloat (y - width / 2) ++ "px")
-                , style "width" (String.fromFloat width ++ "px")
-                , style "height" (String.fromFloat width ++ "px")
+                , style "left" (px (x - width / 2))
+                , style "top" (px (y - width / 2))
+                , style "width" (px width)
+                , style "height" (px width)
                 , style "background-color" redDamage
                 , style "color" "white"
                 , style "display" "flex"
@@ -923,10 +923,10 @@ viewHealthBar camera health maxHealth point =
     in
     div
         [ style "position" "absolute"
-        , style "left" (String.fromFloat (healthBarLocation.x - (healthBarWidth / 2)) ++ "px")
-        , style "top" (String.fromFloat healthBarLocation.y ++ "px")
-        , style "width" (String.fromFloat healthBarWidth ++ "px")
-        , style "height" (String.fromFloat healthBarHeight ++ "px")
+        , style "left" (px (healthBarLocation.x - (healthBarWidth / 2)))
+        , style "top" (px healthBarLocation.y)
+        , style "width" (px healthBarWidth)
+        , style "height" (px healthBarHeight)
         , style "background-color" redDamage
         ]
         [ div
@@ -934,7 +934,7 @@ viewHealthBar camera health maxHealth point =
             , style "left" "0"
             , style "top" "0"
             , style "width" (String.fromFloat (toFloat health / toFloat maxHealth * 100) ++ "%")
-            , style "height" (String.fromFloat healthBarHeight ++ "px")
+            , style "height" (px healthBarHeight)
             , style "background-color" "lime"
             ]
             []
