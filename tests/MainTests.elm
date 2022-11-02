@@ -241,6 +241,36 @@ animationFrame =
         ]
 
 
+shortestPath : Test
+shortestPath =
+    describe "shortestPath"
+        [ test "Gives an empty path if the start and end points are the same" <|
+            \_ ->
+                Expect.equalLists
+                    [ Main.shortestPath (Point3d.meters 0 0 0) (Point3d.meters 0 0 0)
+                    , Main.shortestPath (Point3d.meters 1.1 0 0) (Point3d.meters 1.1 0 0)
+                    , Main.shortestPath (Point3d.meters 1.1 2.2 0) (Point3d.meters 1.1 2.2 0)
+                    , Main.shortestPath (Point3d.meters -1.1 -2.2 0) (Point3d.meters -1.1 -2.2 0)
+                    ]
+                    [ [], [], [], [] ]
+        , test "Gives the shortest path between 2 points" <|
+            \_ ->
+                Expect.equalLists
+                    [ Main.shortestPath (Point3d.meters 0 0 0) (Point3d.meters 0 1 0)
+                    , Main.shortestPath (Point3d.meters 1.1 0 0) (Point3d.meters 1.1 1 0)
+                    , Main.shortestPath (Point3d.meters 1.1 2.2 0) (Point3d.meters 1.1 3.2 0)
+                    , Main.shortestPath (Point3d.meters -1.1 -2.2 0) (Point3d.meters -1.1 -1.2 0)
+                    ]
+                    [ [ Point3d.fromMeters { x = 0, y = 1, z = 0 } ]
+                    , [ Point3d.fromMeters { x = 1.1, y = 1, z = 0 } ]
+                    , [ Point3d.fromMeters { x = 1.1, y = 3.2, z = 0 } ]
+                    , [ Point3d.fromMeters { x = -1.1, y = -1.2000000000000002, z = 0 }
+                      , Point3d.fromMeters { x = -1.1, y = -1.2, z = 0 }
+                      ]
+                    ]
+        ]
+
+
 xyRange : Test
 xyRange =
     describe "xyRange"

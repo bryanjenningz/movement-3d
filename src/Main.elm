@@ -9,6 +9,7 @@ module Main exposing
     , main
     , pointLocation
     , screen
+    , shortestPath
     , update
     , weightedXyRange
     , xyRange
