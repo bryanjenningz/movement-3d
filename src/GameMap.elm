@@ -8,72 +8,55 @@ import Scene3d.Material as Material
 import Vector3d
 
 
-type GameMapTile
-    = GrassTile
-    | RoadTile
+type alias Tile =
+    { color : Color
+    , x : Float
+    , y : Float
+    , z : Float
+    , xLength : Float
+    , yLength : Float
+    }
 
 
-gameMap : List String
-gameMap =
-    [ "GGGGRRGGGG"
-    , "GGGGRRGGGG"
-    , "GGGGRRGGGG"
-    , "GGGGRRGGGG"
-    , "GGGGRRGGGG"
-    , "GGGGRRRRRR"
-    , "GGGGRRRRRR"
-    , "GGGGRRGGGG"
-    , "GGGGRRGGGG"
-    , "GGGGRRGGGG"
+gameTiles : List Tile
+gameTiles =
+    [ { color = Color.darkGreen
+      , x = 0
+      , y = 0
+      , z = -0.02
+      , xLength = 24
+      , yLength = 24
+      }
+    , { color = Color.darkGray
+        , x = 0
+        , y = 0
+        , z = -0.01
+        , xLength = 3
+        , yLength = 24
+        }
+    , { color = Color.darkGray
+            , x = 6
+            , y = 0
+            , z = -0.01
+            , xLength = 12
+            , yLength = 3
+            }
     ]
 
 
 tiles : List (Scene3d.Entity Meters)
 tiles =
-    gameMap
-        |> List.map (String.split "" >> List.map (toGameMapTile GrassTile))
-        |> List.indexedMap
-            (\y tileRow ->
-                List.indexedMap
-                    (\x tile ->
-                        let
-                            tileColor =
-                                case tile of
-                                    GrassTile ->
-                                        Color.darkGreen
-
-                                    RoadTile ->
-                                        Color.darkGray
-                        in
-                        viewTile tileColor (Point3d.meters (toFloat x - gameMapOffset) (toFloat y - gameMapOffset) -0.01)
-                    )
-                    tileRow
-            )
-        |> List.concat
+    List.map viewTile gameTiles
 
 
-viewTile : Color -> Point3d Meters Meters -> Scene3d.Entity Meters
-viewTile color point =
+viewTile : Tile -> Scene3d.Entity Meters
+viewTile { color, xLength, yLength, x, y, z } =
+    let
+        point =
+            Point3d.meters x y z
+    in
     Scene3d.quad (Material.color color)
-        (Point3d.translateBy (Vector3d.meters -0.5 -0.5 0) point)
-        (Point3d.translateBy (Vector3d.meters 0.5 -0.5 0) point)
-        (Point3d.translateBy (Vector3d.meters 0.5 0.5 0) point)
-        (Point3d.translateBy (Vector3d.meters -0.5 0.5 0) point)
-
-
-gameMapOffset : Float
-gameMapOffset =
-    (List.length gameMap |> toFloat) / 2
-
-
-toGameMapTile : GameMapTile -> String -> GameMapTile
-toGameMapTile defaultTile tileStr =
-    case tileStr of
-        "G" ->
-            GrassTile
-
-        "R" ->
-            RoadTile
-
-        _ ->
-            defaultTile
+        (Point3d.translateBy (Vector3d.meters -(xLength / 2) -(yLength / 2) 0) point)
+        (Point3d.translateBy (Vector3d.meters (xLength / 2) -(yLength / 2) 0) point)
+        (Point3d.translateBy (Vector3d.meters (xLength / 2) (yLength / 2) 0) point)
+        (Point3d.translateBy (Vector3d.meters -(xLength / 2) (yLength / 2) 0) point)
