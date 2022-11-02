@@ -1,23 +1,13 @@
 module Main exposing
-    ( AliveMonsterState
-    , Appearance(..)
+    ( Appearance(..)
     , AttackStyle(..)
-    , DeadMonsterState
     , Model
-    , Monster(..)
     , Msg(..)
-    , findAliveMonster
     , getCamera
     , init
     , main
-    , pointLocation
-    , respawnMonster
     , screen
-    , shortestPath
     , update
-    , updateAliveMonster
-    , weightedXyRange
-    , xyRange
     )
 
 import Angle exposing (Angle)
@@ -26,11 +16,13 @@ import Browser
 import Browser.Events exposing (onAnimationFrame, onKeyDown, onKeyUp, onMouseDown)
 import Camera3d exposing (Camera3d)
 import Color exposing (Color)
+import GameMap
 import Html exposing (Attribute, Html, button, div, text)
 import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
 import Json.Decode as Decode
 import Length exposing (Meters)
+import Monster exposing (AliveMonsterState, Hit, Location, Monster(..), TravelPath)
 import Pixels exposing (Pixels)
 import Plane3d
 import Point2d exposing (Point2d)
@@ -46,45 +38,6 @@ import SketchPlane3d
 import Time
 import Vector3d exposing (Vector3d)
 import Viewpoint3d
-
-
-type GameMapTile
-    = GrassTile
-    | RoadTile
-
-
-gameMapTiles : List (List GameMapTile)
-gameMapTiles =
-    [ "GGGGRRGGGG"
-    , "GGGGRRGGGG"
-    , "GGGGRRGGGG"
-    , "GGGGRRGGGG"
-    , "GGGGRRGGGG"
-    , "GGGGRRRRRR"
-    , "GGGGRRRRRR"
-    , "GGGGRRGGGG"
-    , "GGGGRRGGGG"
-    , "GGGGRRGGGG"
-    ]
-        |> List.map (String.split "" >> List.map (toGameMapTile GrassTile))
-
-
-gameMapOffset : Float
-gameMapOffset =
-    (List.length gameMapTiles |> toFloat) / 2
-
-
-toGameMapTile : GameMapTile -> String -> GameMapTile
-toGameMapTile defaultTile tileStr =
-    case tileStr of
-        "G" ->
-            GrassTile
-
-        "R" ->
-            RoadTile
-
-        _ ->
-            defaultTile
 
 
 type alias Model =
@@ -110,108 +63,10 @@ type alias Model =
     }
 
 
-type alias Location =
-    Point3d Meters Meters
-
-
-type alias TravelPath =
-    List Location
-
-
 type Appearance
     = Standing
     | Attacking AliveMonsterState
     | Fighting AliveMonsterState
-
-
-type alias Hit =
-    { amount : Int
-    , disappearTime : Int
-    }
-
-
-type Monster
-    = AliveMonster AliveMonsterState
-    | DeadMonster DeadMonsterState
-
-
-type alias AliveMonsterState =
-    { id : Int
-    , name : String
-    , color : Color
-    , respawnLocation : Location
-    , location : Location
-    , health : Int
-    , maxHealth : Int
-    , hits : List Hit
-    , travelPath : TravelPath
-    }
-
-
-type alias DeadMonsterState =
-    { id : Int
-    , name : String
-    , color : Color
-    , respawnLocation : Location
-    , maxHealth : Int
-    , respawnAt : Int
-    }
-
-
-findAliveMonster : Int -> List Monster -> Maybe AliveMonsterState
-findAliveMonster monsterId monsters =
-    List.filterMap
-        (\monster ->
-            case monster of
-                AliveMonster aliveMonster ->
-                    if aliveMonster.id == monsterId then
-                        Just aliveMonster
-
-                    else
-                        Nothing
-
-                DeadMonster _ ->
-                    Nothing
-        )
-        monsters
-        |> List.head
-
-
-updateAliveMonster : Int -> (AliveMonsterState -> Monster) -> List Monster -> List Monster
-updateAliveMonster monsterId updater monsters =
-    List.map
-        (\monster ->
-            case monster of
-                AliveMonster aliveMonster ->
-                    if aliveMonster.id == monsterId then
-                        updater aliveMonster
-
-                    else
-                        AliveMonster aliveMonster
-
-                DeadMonster deadMonster ->
-                    DeadMonster deadMonster
-        )
-        monsters
-
-
-respawnMonster : Int -> DeadMonsterState -> Monster
-respawnMonster time monster =
-    if time >= monster.respawnAt then
-        AliveMonster
-            { id = monster.id
-            , name = monster.name
-            , color = monster.color
-            , health = monster.maxHealth
-            , maxHealth = monster.maxHealth
-            , respawnLocation = monster.respawnLocation
-            , location = monster.respawnLocation
-            , hits = []
-            , travelPath = []
-            }
-
-    else
-        DeadMonster monster
 
 
 type AttackStyle
@@ -240,31 +95,10 @@ init () =
       , defenseXp = 0
 
       -- Monster state
-      , monsters =
-            [ Point3d.meters -3 3 0
-            , Point3d.meters -3 -3 0
-            , Point3d.meters 3 3 0
-            , Point3d.meters 3 -3 0
-            ]
-                |> List.indexedMap initGoblin
+      , monsters = Monster.init
       }
     , Cmd.none
     )
-
-
-initGoblin : Int -> Location -> Monster
-initGoblin id location =
-    AliveMonster
-        { id = id
-        , name = "Goblin (level 2)"
-        , color = Color.darkPurple
-        , respawnLocation = location
-        , location = location
-        , health = 3
-        , maxHealth = 3
-        , hits = []
-        , travelPath = []
-        }
 
 
 type Msg
@@ -282,7 +116,9 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         AnimationFrame time ->
-            ( applyAnimationFrame time model, generateMonsterTravelPaths model.monsters )
+            ( applyAnimationFrame time model
+            , Monster.generateMonsterTravelPaths model.monsters |> Random.generate SetNewMonsterTravelPaths
+            )
 
         MouseDown mousePoint ->
             ( applyMouseDown mousePoint model, Cmd.none )
@@ -393,7 +229,7 @@ applyAnimationFrame time model =
                             closestSideOf destination model.location
                     in
                     updateLocationTravelPath model.location
-                        (shortestPath model.location monsterSide)
+                        (Monster.shortestPath model.location monsterSide)
 
                 Fighting monster ->
                     let
@@ -404,7 +240,7 @@ applyAnimationFrame time model =
                             closestSideOf destination model.location
                     in
                     updateLocationTravelPath model.location
-                        (shortestPath model.location monsterSide)
+                        (Monster.shortestPath model.location monsterSide)
 
                 _ ->
                     updateLocationTravelPath model.location model.travelPath
@@ -447,7 +283,7 @@ applyAnimationFrame time model =
                                 }
 
                         DeadMonster monster ->
-                            respawnMonster time monster
+                            Monster.respawnMonster time monster
                 )
                 model.monsters
 
@@ -526,7 +362,7 @@ applyMouseDown mousePoint model =
                                 closestSideOf destination model.location
 
                             newTravelPath =
-                                (start :: shortestPath start monsterSide)
+                                (start :: Monster.shortestPath start monsterSide)
                                     |> List.filter (\point -> point /= model.location)
                         in
                         { model | travelPath = newTravelPath, appearance = Attacking monster }
@@ -534,7 +370,7 @@ applyMouseDown mousePoint model =
                     _ ->
                         { model
                             | travelPath =
-                                case shortestPath start destination of
+                                case Monster.shortestPath start destination of
                                     [] ->
                                         [ destination ]
 
@@ -556,7 +392,7 @@ applyAttackRound playerDamage monsterDamage model =
         Fighting fightingMonster ->
             let
                 newMonsters =
-                    updateAliveMonster fightingMonster.id
+                    Monster.updateAliveMonster fightingMonster.id
                         (\monster ->
                             let
                                 newHealth =
@@ -604,7 +440,7 @@ applyAttackRound playerDamage monsterDamage model =
                         :: model.hits
                 , monsters = newMonsters
                 , appearance =
-                    case findAliveMonster fightingMonster.id newMonsters of
+                    case Monster.findAliveMonster fightingMonster.id newMonsters of
                         Nothing ->
                             Standing
 
@@ -632,33 +468,6 @@ applyAttackRound playerDamage monsterDamage model =
 
         _ ->
             model
-
-
-shortestPath : Location -> Location -> TravelPath
-shortestPath start destination =
-    if start == destination then
-        []
-
-    else
-        let
-            xDiff =
-                (destination |> Point3d.toMeters |> .x)
-                    - (start |> Point3d.toMeters |> .x)
-                    |> clamp -1 1
-
-            yDiff =
-                (destination |> Point3d.toMeters |> .y)
-                    - (start |> Point3d.toMeters |> .y)
-                    |> clamp -1 1
-
-            newStart =
-                Vector3d.plus
-                    (Vector3d.from Point3d.origin (Point3d.meters xDiff yDiff 0))
-                    (Vector3d.from Point3d.origin start)
-                    |> Vector3d.toMeters
-                    |> Point3d.fromMeters
-        in
-        newStart :: shortestPath newStart destination
 
 
 getCamera : Model -> Camera3d Meters Meters
@@ -716,26 +525,7 @@ view model =
             ]
             [ Scene3d.unlit
                 { entities =
-                    (List.indexedMap
-                        (\y tileRow ->
-                            List.indexedMap
-                                (\x tile ->
-                                    let
-                                        tileColor =
-                                            case tile of
-                                                GrassTile ->
-                                                    Color.darkGreen
-
-                                                RoadTile ->
-                                                    Color.darkGray
-                                    in
-                                    viewSquare tileColor (Point3d.meters (toFloat x - gameMapOffset) (toFloat y - gameMapOffset) -0.01)
-                                )
-                                tileRow
-                        )
-                        gameMapTiles
-                        |> List.concat
-                    )
+                    GameMap.tiles
                         ++ (viewSquare (playerColor model.appearance) model.location
                                 :: List.map viewMonster model.monsters
                            )
@@ -935,7 +725,7 @@ px x =
     String.fromFloat x ++ "px"
 
 
-viewSquare : Color -> Point3d Length.Meters coordinates -> Scene3d.Entity coordinates
+viewSquare : Color -> Location -> Scene3d.Entity Meters
 viewSquare color point =
     Scene3d.quad (Material.color color)
         (Point3d.translateBy (Vector3d.meters -0.5 -0.5 0) point)
@@ -1049,51 +839,6 @@ generateAttackRound : Cmd Msg
 generateAttackRound =
     Random.generate (\( playerDamage, monsterDamage ) -> AttackRound playerDamage monsterDamage)
         (Random.pair (Random.int 0 1) (Random.int 0 1))
-
-
-addPoints : Location -> Location -> Location
-addPoints p1 p2 =
-    Vector3d.plus (Vector3d.from Point3d.origin p1) (Vector3d.from Point3d.origin p2)
-        |> Vector3d.toMeters
-        |> Point3d.fromMeters
-
-
-xyRange : Int -> Int -> List ( Float, Float )
-xyRange low high =
-    List.range low high
-        |> List.concatMap (\y -> List.range low high |> List.map (\x -> ( toFloat x, toFloat y )))
-
-
-weightedXyRange : Int -> Int -> List ( Float, ( Float, Float ) )
-weightedXyRange low high =
-    xyRange low high |> List.map (\xy -> ( 1, xy ))
-
-
-pointLocation : ( Float, Float ) -> Location
-pointLocation ( x, y ) =
-    Point3d.meters x y 0
-
-
-generateMonsterTravelPaths : List Monster -> Cmd Msg
-generateMonsterTravelPaths monsters =
-    Random.weighted ( 300, Nothing ) (weightedXyRange -1 1 |> List.map (Tuple.mapSecond Just))
-        |> Random.list (List.length monsters)
-        |> Random.map (List.map (Maybe.map pointLocation))
-        |> Random.map
-            (\maybePoints ->
-                List.map2
-                    (\maybePoint m ->
-                        case ( maybePoint, m ) of
-                            ( Just point, AliveMonster monster ) ->
-                                Just (shortestPath monster.location (addPoints point monster.respawnLocation))
-
-                            _ ->
-                                Nothing
-                    )
-                    maybePoints
-                    monsters
-            )
-        |> Random.generate SetNewMonsterTravelPaths
 
 
 main : Program () Model Msg

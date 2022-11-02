@@ -5,6 +5,7 @@ import Color
 import Expect
 import Length exposing (Meters)
 import Main
+import Monster
 import Pixels exposing (Pixels)
 import Point2d exposing (Point2d)
 import Point3d exposing (Point3d)
@@ -13,7 +14,7 @@ import Set
 import Test exposing (Test, describe, test)
 
 
-goblin : Main.AliveMonsterState
+goblin : Monster.AliveMonsterState
 goblin =
     { health = 3
     , id = 0
@@ -27,7 +28,7 @@ goblin =
     }
 
 
-goblin2 : Main.AliveMonsterState
+goblin2 : Monster.AliveMonsterState
 goblin2 =
     { goblin
         | id = 1
@@ -36,7 +37,7 @@ goblin2 =
     }
 
 
-goblin3 : Main.AliveMonsterState
+goblin3 : Monster.AliveMonsterState
 goblin3 =
     { goblin
         | id = 2
@@ -45,7 +46,7 @@ goblin3 =
     }
 
 
-goblin4 : Main.AliveMonsterState
+goblin4 : Monster.AliveMonsterState
 goblin4 =
     { goblin
         | id = 3
@@ -54,7 +55,7 @@ goblin4 =
     }
 
 
-deadGoblin : Main.DeadMonsterState
+deadGoblin : Monster.DeadMonsterState
 deadGoblin =
     { id = 4
     , name = goblin.name
@@ -66,10 +67,10 @@ deadGoblin =
 
 
 allGoblins =
-    [ Main.AliveMonster goblin
-    , Main.AliveMonster goblin2
-    , Main.AliveMonster goblin3
-    , Main.AliveMonster goblin4
+    [ Monster.AliveMonster goblin
+    , Monster.AliveMonster goblin2
+    , Monster.AliveMonster goblin3
+    , Monster.AliveMonster goblin4
     ]
 
 
@@ -88,10 +89,10 @@ init =
                       , cameraAngle = Angle.turns 0
                       , keysDown = Set.empty
                       , monsters =
-                            [ Main.AliveMonster goblin
-                            , Main.AliveMonster goblin2
-                            , Main.AliveMonster goblin3
-                            , Main.AliveMonster goblin4
+                            [ Monster.AliveMonster goblin
+                            , Monster.AliveMonster goblin2
+                            , Monster.AliveMonster goblin3
+                            , Monster.AliveMonster goblin4
                             ]
                       , now = -1
                       , attackStyle = Main.AccuracyStyle
@@ -251,7 +252,7 @@ animationFrame =
             \_ ->
                 let
                     modelWithMonsterTravelPath =
-                        { initialModel | monsters = [ Main.AliveMonster travelingGoblin ] }
+                        { initialModel | monsters = [ Monster.AliveMonster travelingGoblin ] }
 
                     travelingGoblin =
                         { goblin | travelPath = [ Point3d.meters 0 3 0 ] }
@@ -259,161 +260,6 @@ animationFrame =
                 Expect.equal (Main.update (Main.AnimationFrame 0) modelWithMonsterTravelPath |> Tuple.first)
                     { modelWithMonsterTravelPath
                         | now = 0
-                        , monsters = [ Main.AliveMonster { travelingGoblin | location = Point3d.meters -2.95 3 0 } ]
+                        , monsters = [ Monster.AliveMonster { travelingGoblin | location = Point3d.meters -2.95 3 0 } ]
                     }
-        ]
-
-
-shortestPath : Test
-shortestPath =
-    describe "shortestPath"
-        [ test "Gives an empty path if the start and end points are the same" <|
-            \_ ->
-                Expect.equalLists
-                    [ Main.shortestPath (Point3d.meters 0 0 0) (Point3d.meters 0 0 0)
-                    , Main.shortestPath (Point3d.meters 1.1 0 0) (Point3d.meters 1.1 0 0)
-                    , Main.shortestPath (Point3d.meters 1.1 2.2 0) (Point3d.meters 1.1 2.2 0)
-                    , Main.shortestPath (Point3d.meters -1.1 -2.2 0) (Point3d.meters -1.1 -2.2 0)
-                    ]
-                    [ [], [], [], [] ]
-        , test "Gives the shortest path between 2 points 1 space away" <|
-            \_ ->
-                Expect.equalLists
-                    [ Main.shortestPath (Point3d.meters 0 0 0) (Point3d.meters 0 1 0)
-                    , Main.shortestPath (Point3d.meters 1.1 0 0) (Point3d.meters 1.1 1 0)
-                    , Main.shortestPath (Point3d.meters 1.1 2.2 0) (Point3d.meters 1.1 3.2 0)
-                    , Main.shortestPath (Point3d.meters -1.1 -2.2 0) (Point3d.meters -1.1 -1.2 0)
-                    ]
-                    [ [ Point3d.fromMeters { x = 0, y = 1, z = 0 } ]
-                    , [ Point3d.fromMeters { x = 1.1, y = 1, z = 0 } ]
-                    , [ Point3d.fromMeters { x = 1.1, y = 3.2, z = 0 } ]
-                    , [ Point3d.fromMeters { x = -1.1, y = -1.2000000000000002, z = 0 }
-                      , Point3d.fromMeters { x = -1.1, y = -1.2, z = 0 }
-                      ]
-                    ]
-        , test "Gives the shortest path between 2 points 1 diagonal space away" <|
-            \_ ->
-                Expect.equalLists
-                    [ Main.shortestPath (Point3d.meters 0 0 0) (Point3d.meters 1 1 0)
-                    , Main.shortestPath (Point3d.meters 1.1 0 0) (Point3d.meters 2.1 1 0)
-                    , Main.shortestPath (Point3d.meters 1.1 2.2 0) (Point3d.meters 2.1 3.2 0)
-                    , Main.shortestPath (Point3d.meters -1.1 -2.2 0) (Point3d.meters -0.1 -1.2 0)
-                    ]
-                    [ [ Point3d.fromMeters { x = 1, y = 1, z = 0 } ]
-                    , [ Point3d.fromMeters { x = 2.1, y = 1, z = 0 } ]
-                    , [ Point3d.fromMeters { x = 2.1, y = 3.2, z = 0 } ]
-                    , [ Point3d.fromMeters { x = -0.10000000000000009, y = -1.2000000000000002, z = 0 }
-                      , Point3d.fromMeters { x = -0.1, y = -1.2, z = 0 }
-                      ]
-                    ]
-        , test "Gives the shortest path between 2 points less than 1 space away" <|
-            \_ ->
-                Expect.equalLists
-                    [ Main.shortestPath (Point3d.meters 0 0 0) (Point3d.meters 0 0.5 0)
-                    , Main.shortestPath (Point3d.meters 1.1 0 0) (Point3d.meters 1.1 0.3 0)
-                    , Main.shortestPath (Point3d.meters 1.1 2.2 0) (Point3d.meters 1 2.3 0)
-                    , Main.shortestPath (Point3d.meters -1.1 -2.2 0) (Point3d.meters -1.2 -2 0)
-                    ]
-                    [ [ Point3d.fromMeters { x = 0, y = 0.5, z = 0 } ]
-                    , [ Point3d.fromMeters { x = 1.1, y = 0.3, z = 0 } ]
-                    , [ Point3d.fromMeters { x = 1, y = 2.3, z = 0 } ]
-                    , [ Point3d.fromMeters { x = -1.2, y = -2, z = 0 } ]
-                    ]
-        ]
-
-
-findAliveMonster : Test
-findAliveMonster =
-    describe "findAliveMonster"
-        [ test "Finds the alive monster with the id you pass in" <|
-            \_ ->
-                Expect.equalLists
-                    [ Main.findAliveMonster 0 []
-                    , Main.findAliveMonster 0 allGoblins
-                    , Main.findAliveMonster 1 allGoblins
-                    , Main.findAliveMonster 2 allGoblins
-                    , Main.findAliveMonster 3 allGoblins
-                    , Main.findAliveMonster 4 allGoblins
-                    , Main.findAliveMonster 0 (List.reverse allGoblins)
-                    ]
-                    [ Nothing, Just goblin, Just goblin2, Just goblin3, Just goblin4, Nothing, Just goblin ]
-        ]
-
-
-updateAliveMonster : Test
-updateAliveMonster =
-    describe "updateAliveMonster"
-        [ test "Updates the alive monster with the id you pass in" <|
-            \_ ->
-                let
-                    decrementHealth : Main.AliveMonsterState -> Main.Monster
-                    decrementHealth monster =
-                        Main.AliveMonster { monster | health = monster.health - 1 }
-                in
-                Expect.equalLists
-                    [ Main.updateAliveMonster 0 decrementHealth []
-                    , Main.updateAliveMonster 5 decrementHealth allGoblins
-                    , Main.updateAliveMonster 0 decrementHealth allGoblins
-                    , Main.updateAliveMonster 0 decrementHealth (List.reverse allGoblins)
-                    ]
-                    [ []
-                    , allGoblins
-                    , [ decrementHealth goblin ] ++ List.drop 1 allGoblins
-                    , List.take 3 (List.reverse allGoblins) ++ [ decrementHealth goblin ]
-                    ]
-        ]
-
-
-respawnMonster : Test
-respawnMonster =
-    describe "respawnMonster"
-        [ test "Respawns monster if the respawn time has passed" <|
-            \_ ->
-                Expect.equalLists
-                    [ Main.respawnMonster 99 deadGoblin
-                    , Main.respawnMonster 100 deadGoblin
-                    , Main.respawnMonster 1000 deadGoblin
-                    ]
-                    [ Main.DeadMonster deadGoblin
-                    , Main.AliveMonster { goblin | id = 4 }
-                    , Main.AliveMonster { goblin | id = 4 }
-                    ]
-        ]
-
-
-xyRange : Test
-xyRange =
-    describe "xyRange"
-        [ test "Gives a range of xy tuples based on the low and high values you pass in" <|
-            \_ ->
-                Expect.equal (Main.xyRange -1 1)
-                    [ ( -1, -1 ), ( 0, -1 ), ( 1, -1 ), ( -1, 0 ), ( 0, 0 ), ( 1, 0 ), ( -1, 1 ), ( 0, 1 ), ( 1, 1 ) ]
-        ]
-
-
-weightedXyRange : Test
-weightedXyRange =
-    describe "weightedXyRange"
-        [ test "Gives a range of weighted xy tuples" <|
-            \_ ->
-                Expect.equal (Main.weightedXyRange -1 1)
-                    [ ( 1, ( -1, -1 ) )
-                    , ( 1, ( 0, -1 ) )
-                    , ( 1, ( 1, -1 ) )
-                    , ( 1, ( -1, 0 ) )
-                    , ( 1, ( 0, 0 ) )
-                    , ( 1, ( 1, 0 ) )
-                    , ( 1, ( -1, 1 ) )
-                    , ( 1, ( 0, 1 ) )
-                    , ( 1, ( 1, 1 ) )
-                    ]
-        ]
-
-
-pointLocation : Test
-pointLocation =
-    describe "pointLocation"
-        [ test "Converts a 2d point into a 3d location" <|
-            \_ ->
-                Expect.equal (Main.pointLocation ( 1, 2 )) (Point3d.meters 1 2 0)
         ]
