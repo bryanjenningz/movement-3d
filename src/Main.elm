@@ -1,4 +1,18 @@
-module Main exposing (Appearance(..), AttackStyle(..), Model, Monster(..), Msg(..), getCamera, init, main, pointLocation, screen, update, weightedXyRange, xyRange)
+module Main exposing
+    ( Appearance(..)
+    , AttackStyle(..)
+    , Model
+    , Monster(..)
+    , Msg(..)
+    , getCamera
+    , init
+    , main
+    , pointLocation
+    , screen
+    , update
+    , weightedXyRange
+    , xyRange
+    )
 
 import Angle exposing (Angle)
 import Axis3d exposing (Axis3d)
