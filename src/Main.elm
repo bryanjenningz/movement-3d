@@ -118,8 +118,8 @@ type alias TravelPath =
 
 type Appearance
     = Standing
-    | Attacking Monster
-    | Fighting Monster
+    | Attacking AliveMonsterState
+    | Fighting AliveMonsterState
 
 
 type alias Hit =
@@ -290,7 +290,7 @@ update msg model =
                             case ( mon, maybeTravelPath ) of
                                 ( AliveMonster monster, Just travelPath ) ->
                                     case model.appearance of
-                                        Fighting (AliveMonster fightingMonster) ->
+                                        Fighting fightingMonster ->
                                             if fightingMonster.id == monster.id then
                                                 mon
 
@@ -364,7 +364,7 @@ applyAnimationFrame time model =
     let
         ( newLocation, newTravelPath ) =
             case model.appearance of
-                Attacking (AliveMonster monster) ->
+                Attacking monster ->
                     let
                         destination =
                             Maybe.withDefault monster.location (List.head monster.travelPath)
@@ -375,7 +375,7 @@ applyAnimationFrame time model =
                     updateLocationTravelPath model.location
                         (shortestPath model.location monsterSide)
 
-                Fighting (AliveMonster monster) ->
+                Fighting monster ->
                     let
                         destination =
                             Maybe.withDefault monster.location (List.head monster.travelPath)
@@ -415,7 +415,7 @@ applyAnimationFrame time model =
                                     , location = newMonsterLocation
                                     , travelPath =
                                         case model.appearance of
-                                            Fighting (AliveMonster fightingMonster) ->
+                                            Fighting fightingMonster ->
                                                 if monster.id == fightingMonster.id then
                                                     List.take 1 newMonsterTravelPath
 
@@ -514,7 +514,7 @@ applyMouseDown mousePoint model =
                         List.head model.travelPath |> Maybe.withDefault model.location
                 in
                 case attackingMonster of
-                    Just monster ->
+                    Just (AliveMonster monster) ->
                         let
                             monsterSide =
                                 closestSideOf destination model.location
@@ -525,7 +525,7 @@ applyMouseDown mousePoint model =
                         in
                         { model | travelPath = newTravelPath, appearance = Attacking monster }
 
-                    Nothing ->
+                    _ ->
                         { model
                             | travelPath =
                                 case shortestPath start destination of
@@ -547,7 +547,7 @@ respawnTime =
 applyAttackRound : Int -> Int -> Model -> Model
 applyAttackRound playerDamage monsterDamage model =
     case model.appearance of
-        Fighting (AliveMonster fightingMonster) ->
+        Fighting fightingMonster ->
             let
                 newMonsters =
                     updateAliveMonster fightingMonster.id
@@ -604,7 +604,7 @@ applyAttackRound playerDamage monsterDamage model =
                             Standing
 
                         Just newFightingMonster ->
-                            Fighting (AliveMonster newFightingMonster)
+                            Fighting newFightingMonster
                 , accuracyXp =
                     if model.attackStyle == AccuracyStyle then
                         model.accuracyXp + monsterDamage
