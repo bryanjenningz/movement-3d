@@ -24,23 +24,23 @@ gameTiles =
       , x = 0
       , y = 0
       , z = -0.02
-      , xLength = 24
-      , yLength = 24
+      , xLength = 12
+      , yLength = 12
       }
     , { color = Color.darkGray
-        , x = 0
-        , y = 0
-        , z = -0.01
-        , xLength = 3
-        , yLength = 24
-        }
+      , x = 0
+      , y = 0
+      , z = -0.01
+      , xLength = 3
+      , yLength = 12
+      }
     , { color = Color.darkGray
-            , x = 6
-            , y = 0
-            , z = -0.01
-            , xLength = 12
-            , yLength = 3
-            }
+      , x = 3.75
+      , y = 0
+      , z = -0.01
+      , xLength = 4.5
+      , yLength = 3
+      }
     ]
 
 

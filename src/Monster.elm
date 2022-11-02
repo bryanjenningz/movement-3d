@@ -190,7 +190,7 @@ pointLocation ( x, y ) =
 
 generateMonsterTravelPaths : List Monster -> Generator (List (Maybe TravelPath))
 generateMonsterTravelPaths monsters =
-    Random.weighted ( 300, Nothing ) (weightedXyRange -1 1 |> List.map (Tuple.mapSecond Just))
+    Random.weighted ( 500, Nothing ) (weightedXyRange -1 1 |> List.map (Tuple.mapSecond Just))
         |> Random.list (List.length monsters)
         |> Random.map (List.map (Maybe.map pointLocation))
         |> Random.map
