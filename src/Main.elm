@@ -142,22 +142,22 @@ update msg model =
             let
                 newMonsters =
                     List.map2
-                        (\mon maybeTravelPath ->
-                            case ( mon, maybeTravelPath ) of
-                                ( AliveMonster monster, Just travelPath ) ->
+                        (\monster maybeTravelPath ->
+                            case ( monster, maybeTravelPath ) of
+                                ( AliveMonster aliveMonster, Just travelPath ) ->
                                     case model.appearance of
                                         Fighting fightingMonster ->
-                                            if fightingMonster.id == monster.id then
-                                                mon
+                                            if fightingMonster.id == aliveMonster.id then
+                                                monster
 
                                             else
-                                                AliveMonster { monster | travelPath = travelPath }
+                                                AliveMonster { aliveMonster | travelPath = travelPath }
 
                                         _ ->
-                                            AliveMonster { monster | travelPath = travelPath }
+                                            AliveMonster { aliveMonster | travelPath = travelPath }
 
                                 _ ->
-                                    mon
+                                    monster
                         )
                         model.monsters
                         newMonsterTravelPaths
