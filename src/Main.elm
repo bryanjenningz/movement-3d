@@ -380,12 +380,6 @@ applyMouseDown mousePoint model =
                         }
 
 
-respawnTime : Int
-respawnTime =
-    -- 20 seconds
-    20000
-
-
 applyAttackRound : Int -> Int -> Model -> Model
 applyAttackRound playerDamage monsterDamage model =
     case model.appearance of
@@ -405,14 +399,7 @@ applyAttackRound playerDamage monsterDamage model =
                                         :: monster.hits
                             in
                             if newHealth <= 0 then
-                                DeadMonster
-                                    { id = monster.id
-                                    , name = monster.name
-                                    , color = monster.color
-                                    , maxHealth = monster.maxHealth
-                                    , respawnAt = model.now + respawnTime
-                                    , respawnLocation = monster.respawnLocation
-                                    }
+                                DeadMonster (Monster.killMonster model.now monster)
 
                             else
                                 AliveMonster

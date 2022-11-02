@@ -8,8 +8,10 @@ module Monster exposing
     , findAliveMonster
     , generateMonsterTravelPaths
     , init
+    , killMonster
     , pointLocation
     , respawnMonster
+    , respawnTime
     , shortestPath
     , updateAliveMonster
     , weightedXyRange
@@ -63,6 +65,12 @@ type alias DeadMonsterState =
     , maxHealth : Int
     , respawnAt : Int
     }
+
+
+respawnTime : Int
+respawnTime =
+    -- 20 seconds
+    20000
 
 
 init : List Monster
@@ -144,6 +152,17 @@ respawnMonster time monster =
 
     else
         DeadMonster monster
+
+
+killMonster : Int -> AliveMonsterState -> DeadMonsterState
+killMonster time monster =
+    { id = monster.id
+    , name = monster.name
+    , color = monster.color
+    , maxHealth = monster.maxHealth
+    , respawnAt = time + respawnTime
+    , respawnLocation = monster.respawnLocation
+    }
 
 
 addPoints : Location -> Location -> Location
