@@ -253,7 +253,7 @@ shortestPath =
                     , Main.shortestPath (Point3d.meters -1.1 -2.2 0) (Point3d.meters -1.1 -2.2 0)
                     ]
                     [ [], [], [], [] ]
-        , test "Gives the shortest path between 2 points" <|
+        , test "Gives the shortest path between 2 points 1 space away" <|
             \_ ->
                 Expect.equalLists
                     [ Main.shortestPath (Point3d.meters 0 0 0) (Point3d.meters 0 1 0)
@@ -266,6 +266,21 @@ shortestPath =
                     , [ Point3d.fromMeters { x = 1.1, y = 3.2, z = 0 } ]
                     , [ Point3d.fromMeters { x = -1.1, y = -1.2000000000000002, z = 0 }
                       , Point3d.fromMeters { x = -1.1, y = -1.2, z = 0 }
+                      ]
+                    ]
+        , test "Gives the shortest path between 2 points 1 diagonal space away" <|
+            \_ ->
+                Expect.equalLists
+                    [ Main.shortestPath (Point3d.meters 0 0 0) (Point3d.meters 1 1 0)
+                    , Main.shortestPath (Point3d.meters 1.1 0 0) (Point3d.meters 2.1 1 0)
+                    , Main.shortestPath (Point3d.meters 1.1 2.2 0) (Point3d.meters 2.1 3.2 0)
+                    , Main.shortestPath (Point3d.meters -1.1 -2.2 0) (Point3d.meters -0.1 -1.2 0)
+                    ]
+                    [ [ Point3d.fromMeters { x = 1, y = 1, z = 0 } ]
+                    , [ Point3d.fromMeters { x = 2.1, y = 1, z = 0 } ]
+                    , [ Point3d.fromMeters { x = 2.1, y = 3.2, z = 0 } ]
+                    , [ Point3d.fromMeters { x = -0.10000000000000009, y = -1.2000000000000002, z = 0 }
+                      , Point3d.fromMeters { x = -0.1, y = -1.2, z = 0 }
                       ]
                     ]
         ]
