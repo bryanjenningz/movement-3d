@@ -325,6 +325,30 @@ findAliveMonster =
         ]
 
 
+updateAliveMonster : Test
+updateAliveMonster =
+    describe "updateAliveMonster"
+        [ test "Updates the alive monster with the id you pass in" <|
+            \_ ->
+                let
+                    decrementHealth : Main.AliveMonsterState -> Main.Monster
+                    decrementHealth monster =
+                        Main.AliveMonster { monster | health = monster.health - 1 }
+                in
+                Expect.equalLists
+                    [ Main.updateAliveMonster 0 decrementHealth []
+                    , Main.updateAliveMonster 5 decrementHealth allGoblins
+                    , Main.updateAliveMonster 0 decrementHealth allGoblins
+                    , Main.updateAliveMonster 0 decrementHealth (List.reverse allGoblins)
+                    ]
+                    [ []
+                    , allGoblins
+                    , [ decrementHealth goblin ] ++ List.drop 1 allGoblins
+                    , List.take 3 (List.reverse allGoblins) ++ [ decrementHealth goblin ]
+                    ]
+        ]
+
+
 xyRange : Test
 xyRange =
     describe "xyRange"

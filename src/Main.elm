@@ -1,5 +1,6 @@
 module Main exposing
-    ( Appearance(..)
+    ( AliveMonsterState
+    , Appearance(..)
     , AttackStyle(..)
     , Model
     , Monster(..)
@@ -12,6 +13,7 @@ module Main exposing
     , screen
     , shortestPath
     , update
+    , updateAliveMonster
     , weightedXyRange
     , xyRange
     )
@@ -172,6 +174,24 @@ findAliveMonster monsterId monsters =
         )
         monsters
         |> List.head
+
+
+updateAliveMonster : Int -> (AliveMonsterState -> Monster) -> List Monster -> List Monster
+updateAliveMonster monsterId updater monsters =
+    List.map
+        (\monster ->
+            case monster of
+                AliveMonster aliveMonster ->
+                    if aliveMonster.id == monsterId then
+                        updater aliveMonster
+
+                    else
+                        AliveMonster aliveMonster
+
+                DeadMonster deadMonster ->
+                    DeadMonster deadMonster
+        )
+        monsters
 
 
 type AttackStyle
@@ -530,44 +550,35 @@ applyAttackRound playerDamage monsterDamage model =
         Fighting (AliveMonster fightingMonster) ->
             let
                 newMonsters =
-                    List.map
-                        (\mon ->
-                            case mon of
-                                AliveMonster monster ->
-                                    if monster.id == fightingMonster.id then
-                                        let
-                                            newHealth =
-                                                monster.health - monsterDamage
+                    updateAliveMonster fightingMonster.id
+                        (\monster ->
+                            let
+                                newHealth =
+                                    monster.health - monsterDamage
 
-                                            newHits =
-                                                { amount = monsterDamage
-                                                , disappearTime = disappearTime
-                                                }
-                                                    :: monster.hits
-                                        in
-                                        if newHealth <= 0 then
-                                            DeadMonster
-                                                { id = monster.id
-                                                , name = monster.name
-                                                , color = monster.color
-                                                , hits = newHits
-                                                , maxHealth = monster.maxHealth
-                                                , respawnAt = model.now + respawnTime
-                                                , respawnLocation = monster.respawnLocation
-                                                }
+                                newHits =
+                                    { amount = monsterDamage
+                                    , disappearTime = disappearTime
+                                    }
+                                        :: monster.hits
+                            in
+                            if newHealth <= 0 then
+                                DeadMonster
+                                    { id = monster.id
+                                    , name = monster.name
+                                    , color = monster.color
+                                    , hits = newHits
+                                    , maxHealth = monster.maxHealth
+                                    , respawnAt = model.now + respawnTime
+                                    , respawnLocation = monster.respawnLocation
+                                    }
 
-                                        else
-                                            AliveMonster
-                                                { monster
-                                                    | health = newHealth
-                                                    , hits = newHits
-                                                }
-
-                                    else
-                                        AliveMonster monster
-
-                                DeadMonster monster ->
-                                    DeadMonster monster
+                            else
+                                AliveMonster
+                                    { monster
+                                        | health = newHealth
+                                        , hits = newHits
+                                    }
                         )
                         model.monsters
 
