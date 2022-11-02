@@ -2,6 +2,7 @@ module Main exposing
     ( AliveMonsterState
     , Appearance(..)
     , AttackStyle(..)
+    , DeadMonsterState
     , Model
     , Monster(..)
     , Msg(..)
@@ -153,7 +154,6 @@ type alias DeadMonsterState =
     , color : Color
     , respawnLocation : Location
     , maxHealth : Int
-    , hits : List Hit
     , respawnAt : Int
     }
 
@@ -573,7 +573,6 @@ applyAttackRound playerDamage monsterDamage model =
                                     { id = monster.id
                                     , name = monster.name
                                     , color = monster.color
-                                    , hits = newHits
                                     , maxHealth = monster.maxHealth
                                     , respawnAt = model.now + respawnTime
                                     , respawnLocation = monster.respawnLocation

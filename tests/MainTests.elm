@@ -50,13 +50,13 @@ goblin4 =
     }
 
 
+deadGoblin : Main.DeadMonsterState
 deadGoblin =
     { id = 4
     , name = goblin.name
     , color = goblin.color
     , respawnLocation = goblin.respawnLocation
     , maxHealth = goblin.maxHealth
-    , hits = []
     , respawnAt = 100
     }
 
