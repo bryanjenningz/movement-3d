@@ -117,6 +117,7 @@ type Msg
     | MouseDown (Point2d Pixels Meters)
     | KeyDown String
     | KeyUp String
+    | SetSidePanel SidePanel
     | GenerateAttackRound
     | AttackRound Int Int
     | SetAttackStyle AttackStyle
@@ -139,6 +140,9 @@ update msg model =
 
         KeyUp key ->
             ( { model | keysDown = Set.remove key model.keysDown }, Cmd.none )
+
+        SetSidePanel sidePanel ->
+            ( { model | sidePanel = sidePanel }, Cmd.none )
 
         GenerateAttackRound ->
             ( model, generateAttackRound )
@@ -526,15 +530,39 @@ view model =
 
 viewSidePanel : Model -> Html Msg
 viewSidePanel model =
-    case model.sidePanel of
-        AttackStylePanel ->
-            div []
-                [ text "Attack style"
-                , div [ style "margin-bottom" "20px" ] [ viewAttackStyle model, viewXpBar model ]
-                ]
+    div [ style "width" "320px"]
+        [ div [ style "display" "flex" ]
+            [ sidePanelButton AttackStylePanel model "Attack Style"
+            , sidePanelButton InventoryPanel model "Inventory"
+            ]
+        , case model.sidePanel of
+            AttackStylePanel ->
+                div []
+                    [ text "Attack style"
+                    , div [ style "margin-bottom" "20px" ]
+                        [ viewAttackStyle model, viewXpBar model ]
+                    ]
 
-        InventoryPanel ->
-            Inventory.viewInventory model.inventory
+            InventoryPanel ->
+                Inventory.viewInventory model.inventory
+        ]
+
+
+sidePanelButton : SidePanel -> Model -> String -> Html Msg
+sidePanelButton sidePanel model buttonText =
+    button
+        [ onClick (SetSidePanel sidePanel)
+        , style "background-color"
+            (if model.sidePanel == sidePanel then
+                redDamage
+
+             else
+                ""
+            )
+        , style "height" "50px"
+        , style "flex-grow" "1"
+        ]
+        [ text buttonText ]
 
 
 viewGame : Model -> Html Msg
