@@ -1,9 +1,20 @@
 module ItemTests exposing (..)
 
 import Expect
-import Item exposing (Item(..), dropItem, pickUpItem)
-import Point3d
+import Item exposing (GroundItem, Item(..), dropItem, fromItems, init, pickUpItem, toItems)
+import Length exposing (Meters)
+import Point3d exposing (Point3d)
 import Test exposing (Test, describe, test)
+
+
+groundItemLocation : Point3d Meters Meters
+groundItemLocation =
+    Point3d.meters 0 0 0
+
+
+groundItem : GroundItem
+groundItem =
+    { item = Coins 1, location = groundItemLocation, disappearsAt = 20000 }
 
 
 dropItemTests : Test
@@ -12,8 +23,8 @@ dropItemTests =
         [ test "Creates a ground item" <|
             \_ ->
                 Expect.equalLists
-                    [ dropItem (Point3d.meters 0 0 0) 0 (Coins 1) ]
-                    [ { item = Coins 1, location = Point3d.meters 0 0 0, disappearsAt = 20000 } ]
+                    [ dropItem groundItemLocation 0 0 (fromItems [ Coins 1 ]) ]
+                    [ ( Just groundItem, init ) ]
         ]
 
 
@@ -23,6 +34,6 @@ pickUpItemTests =
         [ test "Creates an item" <|
             \_ ->
                 Expect.equalLists
-                    [ pickUpItem { item = Coins 1, location = Point3d.meters 0 0 0, disappearsAt = 20000 } ]
-                    [ Coins 1 ]
+                    [ pickUpItem groundItem init |> toItems ]
+                    [ [ Coins 1 ] ]
         ]
