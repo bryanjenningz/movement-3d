@@ -897,23 +897,22 @@ viewGroundItemText camera groundItem =
 
 viewAttackStyle : Model -> Html Msg
 viewAttackStyle model =
-    div []
-        [ button
-            [ onClick (SetAttackStyle AccuracyStyle)
-            , activeAttackStyle (model.attackStyle == AccuracyStyle)
-            ]
-            [ text "Accuracy" ]
-        , button
-            [ onClick (SetAttackStyle StrengthStyle)
-            , activeAttackStyle (model.attackStyle == StrengthStyle)
-            ]
-            [ text "Strength" ]
-        , button
-            [ onClick (SetAttackStyle DefenseStyle)
-            , activeAttackStyle (model.attackStyle == DefenseStyle)
-            ]
-            [ text "Defense" ]
+    div [ style "display" "flex" ]
+        [ attackStyleButton AccuracyStyle "Accuracy" model
+        , attackStyleButton StrengthStyle "Strength" model
+        , attackStyleButton DefenseStyle "Defense" model
         ]
+
+
+attackStyleButton : AttackStyle -> String -> Model -> Html Msg
+attackStyleButton attackStyle buttonText model =
+    button
+        [ onClick (SetAttackStyle attackStyle)
+        , activeAttackStyle (model.attackStyle == attackStyle)
+        , style "flex-grow" "1"
+        , style "height" (px 50)
+        ]
+        [ text buttonText ]
 
 
 activeAttackStyle : Bool -> Attribute msg
