@@ -1,4 +1,4 @@
-module Item exposing (GroundItem, Inventory, Item(..), dropItem, fromItems, init, pickUpItem, toItems)
+module Inventory exposing (GroundItem, Inventory, Item(..), dropItem, fromItems, init, pickUpItem, toItems)
 
 import Length exposing (Meters)
 import List.Extra as List

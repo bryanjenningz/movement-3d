@@ -1,7 +1,7 @@
-module ItemTests exposing (..)
+module InventoryTests exposing (..)
 
 import Expect
-import Item exposing (GroundItem, Item(..), dropItem, fromItems, init, pickUpItem, toItems)
+import Inventory exposing (GroundItem, Item(..), dropItem, fromItems, init, pickUpItem, toItems)
 import Length exposing (Meters)
 import Point3d exposing (Point3d)
 import Test exposing (Test, describe, test)
