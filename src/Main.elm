@@ -21,7 +21,7 @@ import GameMap
 import Html exposing (Attribute, Html, button, div, text)
 import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick)
-import Inventory exposing (Inventory)
+import Inventory exposing (GroundItem, Inventory)
 import Json.Decode as Decode
 import Length exposing (Meters)
 import Monster exposing (AliveMonsterState, Hit, Location, Monster(..), TravelPath)
@@ -74,6 +74,7 @@ type SidePanel
 
 type Appearance
     = Standing
+    | PickingUpItem GroundItem
     | Attacking AliveMonsterState
     | Fighting AliveMonsterState
 
@@ -530,7 +531,7 @@ view model =
 
 viewSidePanel : Model -> Html Msg
 viewSidePanel model =
-    div [ style "width" "320px"]
+    div [ style "width" "320px" ]
         [ div [ style "display" "flex" ]
             [ sidePanelButton AttackStylePanel model "Attack Style"
             , sidePanelButton InventoryPanel model "Inventory"
@@ -676,6 +677,9 @@ playerColor state =
         Standing ->
             Color.blue
 
+        PickingUpItem _ ->
+            Color.darkBlue
+
         Attacking _ ->
             Color.darkBlue
 
@@ -717,6 +721,9 @@ getStateText model =
 
                 _ ->
                     "Walking"
+
+        PickingUpItem _ ->
+            "Getting item"
 
         Attacking _ ->
             "Attacking"
