@@ -53,10 +53,12 @@ pickUpItemTests =
                     , init |> pickUpItem groundCoins |> pickUpItem groundCoins |> toItems
                     , init |> pickUpItem groundCoins |> pickUpItem groundBronzeDagger |> pickUpItem groundCoins |> toItems
                     , init |> pickUpItem groundBronzeDagger |> pickUpItem groundCoins |> pickUpItem groundBronzeDagger |> toItems
+                    , fromItems (List.repeat 28 BronzeDagger) |> pickUpItem groundBronzeDagger |> toItems
                     ]
                     [ [ Coins 1 ]
                     , [ Coins 2 ]
                     , [ Coins 2, BronzeDagger ]
                     , [ BronzeDagger, Coins 1, BronzeDagger ]
+                    , List.repeat 28 BronzeDagger
                     ]
         ]
