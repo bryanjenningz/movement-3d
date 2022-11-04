@@ -270,16 +270,19 @@ applyAnimationFrame time model =
                 PickingUpItem groundItem ->
                     updateLocationTravelPath model.location model.travelPath
 
-        ( newState, newInventory ) =
+        ( newState, newInventory, newGroundItems ) =
             case ( newTravelPath, model.appearance ) of
                 ( [], Attacking monster ) ->
-                    ( Fighting monster, model.inventory )
+                    ( Fighting monster, model.inventory, model.groundItems )
 
                 ( [], PickingUpItem groundItem ) ->
-                    ( Standing, Inventory.pickUpItem groundItem model.inventory )
+                    ( Standing
+                    , Inventory.pickUpItem groundItem model.inventory
+                    , List.filter ((/=) groundItem) model.groundItems
+                    )
 
                 _ ->
-                    ( model.appearance, model.inventory )
+                    ( model.appearance, model.inventory, model.groundItems )
 
         newHits =
             List.filter (\hit -> hit.disappearTime > time) model.hits
@@ -324,6 +327,7 @@ applyAnimationFrame time model =
                 , monsters = newMonsters
                 , now = time
                 , inventory = newInventory
+                , groundItems = newGroundItems
             }
 
         rotationSpeed =
