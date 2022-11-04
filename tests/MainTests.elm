@@ -102,6 +102,7 @@ init =
                       , strengthXp = 0
                       , defenseXp = 0
                       , inventory = Inventory.init
+                      , groundItems = []
                       }
                     , Cmd.none
                     )

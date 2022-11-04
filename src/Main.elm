@@ -64,6 +64,9 @@ type alias Model =
 
     -- Monster state
     , monsters : List Monster
+
+    -- Items on the ground
+    , groundItems : List GroundItem
     }
 
 
@@ -108,6 +111,9 @@ init () =
 
       -- Monster state
       , monsters = Monster.init
+
+      -- Items on the ground
+      , groundItems = []
       }
     , Cmd.none
     )
@@ -258,16 +264,22 @@ applyAnimationFrame time model =
                     updateLocationTravelPath model.location
                         (Monster.shortestPath model.location monsterSide)
 
-                _ ->
+                Standing ->
                     updateLocationTravelPath model.location model.travelPath
 
-        newState =
+                PickingUpItem groundItem ->
+                    updateLocationTravelPath model.location model.travelPath
+
+        ( newState, newInventory ) =
             case ( newTravelPath, model.appearance ) of
                 ( [], Attacking monster ) ->
-                    Fighting monster
+                    ( Fighting monster, model.inventory )
+
+                ( [], PickingUpItem groundItem ) ->
+                    ( Standing, Inventory.pickUpItem groundItem model.inventory )
 
                 _ ->
-                    model.appearance
+                    ( model.appearance, model.inventory )
 
         newHits =
             List.filter (\hit -> hit.disappearTime > time) model.hits
@@ -311,6 +323,7 @@ applyAnimationFrame time model =
                 , hits = newHits
                 , monsters = newMonsters
                 , now = time
+                , inventory = newInventory
             }
 
         rotationSpeed =
@@ -368,11 +381,17 @@ applyMouseDown mousePoint model =
                             model.monsters
                             |> List.head
 
+                    pickingUpItem =
+                        List.filter
+                            (\groundItem -> Point3d.equalWithin (Length.meters 0.5) destination groundItem.location)
+                            model.groundItems
+                            |> List.head
+
                     start =
                         List.head model.travelPath |> Maybe.withDefault model.location
                 in
-                case attackingMonster of
-                    Just (AliveMonster monster) ->
+                case ( attackingMonster, pickingUpItem ) of
+                    ( Just (AliveMonster monster), _ ) ->
                         let
                             monsterSide =
                                 closestSideOf destination model.location
@@ -382,6 +401,9 @@ applyMouseDown mousePoint model =
                                     |> List.filter (\point -> point /= model.location)
                         in
                         { model | travelPath = newTravelPath, appearance = Attacking monster }
+
+                    ( _, Just groundItem ) ->
+                        { model | travelPath = Monster.shortestPath start destination, appearance = PickingUpItem groundItem }
 
                     _ ->
                         { model
