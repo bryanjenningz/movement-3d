@@ -1,4 +1,4 @@
 # Simple 3D movement game
-3D movement and attacking game demo written in Elm.
+3D movement and attacking game demo written in Elm. Heavily inspired by RuneScape.
 
 <img src="game-screenshot.png" alt="">
