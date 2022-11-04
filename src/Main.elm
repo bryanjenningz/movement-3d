@@ -3,6 +3,7 @@ module Main exposing
     , AttackStyle(..)
     , Model
     , Msg(..)
+    , SidePanel(..)
     , getCamera
     , init
     , main
@@ -46,6 +47,7 @@ type alias Model =
     { now : Int
     , cameraAngle : Angle
     , keysDown : Set String
+    , sidePanel : SidePanel
 
     -- Player state
     , location : Location
@@ -63,6 +65,11 @@ type alias Model =
     -- Monster state
     , monsters : List Monster
     }
+
+
+type SidePanel
+    = AttackStylePanel
+    | InventoryPanel
 
 
 type Appearance
@@ -83,6 +90,7 @@ init () =
       { now = -1
       , cameraAngle = Angle.turns 0
       , keysDown = Set.empty
+      , sidePanel = InventoryPanel
 
       -- Player state
       , location = Point3d.meters 0 0 0
@@ -508,13 +516,25 @@ view model =
     div []
         [ div [ class "game-container" ]
             [ viewGame model
-            , Inventory.viewInventory model.inventory
+            , viewSidePanel model
             ]
-        , div [ style "margin-bottom" "20px" ] [ viewAttackStyle model, viewXpBar model ]
         , div [] [ text "Use left and right arrow keys to rotate the screen." ]
         , div [] [ text "Click on the screen to move to that location." ]
         , div [] [ text "Click on a monster to attack it." ]
         ]
+
+
+viewSidePanel : Model -> Html Msg
+viewSidePanel model =
+    case model.sidePanel of
+        AttackStylePanel ->
+            div []
+                [ text "Attack style"
+                , div [ style "margin-bottom" "20px" ] [ viewAttackStyle model, viewXpBar model ]
+                ]
+
+        InventoryPanel ->
+            Inventory.viewInventory model.inventory
 
 
 viewGame : Model -> Html Msg

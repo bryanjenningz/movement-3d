@@ -83,6 +83,7 @@ init =
                 Expect.equal (Main.init ())
                     ( { location = Point3d.meters 0 0 0
                       , appearance = Main.Standing
+                      , sidePanel = Main.InventoryPanel
                       , health = 10
                       , maxHealth = 10
                       , hits = []
