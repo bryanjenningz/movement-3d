@@ -327,7 +327,7 @@ applyAnimationFrame time model =
                 , monsters = newMonsters
                 , now = time
                 , inventory = newInventory
-                , groundItems = newGroundItems
+                , groundItems = newGroundItems |> List.filter (\item -> item.disappearsAt > time)
             }
 
         rotationSpeed =
