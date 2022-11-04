@@ -3,6 +3,7 @@ module MainTests exposing (..)
 import Angle
 import Color
 import Expect
+import Inventory
 import Length exposing (Meters)
 import Main
 import Monster
@@ -99,6 +100,7 @@ init =
                       , accuracyXp = 0
                       , strengthXp = 0
                       , defenseXp = 0
+                      , inventory = Inventory.init
                       }
                     , Cmd.none
                     )

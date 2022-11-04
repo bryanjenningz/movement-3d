@@ -12,9 +12,14 @@ groundItemLocation =
     Point3d.meters 0 0 0
 
 
-groundItem : GroundItem
-groundItem =
+groundCoins : GroundItem
+groundCoins =
     { item = Coins 1, location = groundItemLocation, disappearsAt = 20000 }
+
+
+groundBronzeDagger : GroundItem
+groundBronzeDagger =
+    { item = BronzeDagger, location = groundItemLocation, disappearsAt = 20000 }
 
 
 dropItemTests : Test
@@ -24,7 +29,7 @@ dropItemTests =
             \_ ->
                 Expect.equalLists
                     [ dropItem groundItemLocation 0 0 (fromItems [ Coins 1 ]) ]
-                    [ ( Just groundItem, init ) ]
+                    [ ( Just groundCoins, init ) ]
         ]
 
 
@@ -34,10 +39,14 @@ pickUpItemTests =
         [ test "Adds an item to the inventory if there's space" <|
             \_ ->
                 Expect.equalLists
-                    [ init |> pickUpItem groundItem |> toItems
-                    , init |> pickUpItem groundItem |> pickUpItem groundItem |> toItems
+                    [ init |> pickUpItem groundCoins |> toItems
+                    , init |> pickUpItem groundCoins |> pickUpItem groundCoins |> toItems
+                    , init |> pickUpItem groundCoins |> pickUpItem groundBronzeDagger |> pickUpItem groundCoins |> toItems
+                    , init |> pickUpItem groundBronzeDagger |> pickUpItem groundCoins |> pickUpItem groundBronzeDagger |> toItems
                     ]
                     [ [ Coins 1 ]
                     , [ Coins 2 ]
+                    , [ Coins 2, BronzeDagger ]
+                    , [ BronzeDagger, Coins 1, BronzeDagger ]
                     ]
         ]

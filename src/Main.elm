@@ -20,6 +20,7 @@ import GameMap
 import Html exposing (Attribute, Html, button, div, text)
 import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
+import Inventory exposing (Inventory)
 import Json.Decode as Decode
 import Length exposing (Meters)
 import Monster exposing (AliveMonsterState, Hit, Location, Monster(..), TravelPath)
@@ -57,6 +58,7 @@ type alias Model =
     , accuracyXp : Int
     , strengthXp : Int
     , defenseXp : Int
+    , inventory : Inventory
 
     -- Monster state
     , monsters : List Monster
@@ -93,6 +95,7 @@ init () =
       , accuracyXp = 0
       , strengthXp = 0
       , defenseXp = 0
+      , inventory = Inventory.init
 
       -- Monster state
       , monsters = Monster.init

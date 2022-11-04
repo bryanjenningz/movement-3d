@@ -11,6 +11,7 @@ type alias Location =
 
 type Item
     = Coins Int
+    | BronzeDagger
 
 
 type alias GroundItem =
@@ -70,6 +71,13 @@ pickUpItem groundItem (Inventory items) =
                 Just coinsIndex ->
                     Inventory (List.updateAt coinsIndex (addCoins amount) items)
 
+        BronzeDagger ->
+            if List.length items >= maxInventoryItems then
+                Inventory items
+
+            else
+                Inventory (items ++ [ groundItem.item ])
+
 
 isCoins : Item -> Bool
 isCoins item =
@@ -77,12 +85,18 @@ isCoins item =
         Coins _ ->
             True
 
+        _ ->
+            False
+
 
 addCoins : Int -> Item -> Item
 addCoins addAmount item =
     case item of
         Coins amount ->
             Coins (amount + addAmount)
+
+        _ ->
+            item
 
 
 maxInventoryItems : Int
