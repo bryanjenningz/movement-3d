@@ -598,6 +598,7 @@ viewGame model =
         [ Scene3d.unlit
             { entities =
                 GameMap.tiles
+                    ++ List.map Inventory.viewGroundItem model.groundItems
                     ++ (viewSquare (playerColor model.appearance) model.location
                             :: List.map viewMonster model.monsters
                        )

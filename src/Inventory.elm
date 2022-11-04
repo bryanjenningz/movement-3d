@@ -1,10 +1,14 @@
-module Inventory exposing (GroundItem, Inventory, Item(..), dropItem, fromItems, init, pickUpItem, toItems, viewInventory)
+module Inventory exposing (GroundItem, Inventory, Item(..), dropItem, fromItems, init, pickUpItem, toItems, viewGroundItem, viewInventory)
 
+import Color
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class)
 import Length exposing (Meters)
 import List.Extra as List
 import Point3d exposing (Point3d)
+import Scene3d
+import Scene3d.Material as Material
+import Vector3d
 
 
 type alias Location =
@@ -105,6 +109,24 @@ viewItem item =
 
             Just BronzeDagger ->
                 [ text "Bronze dagger" ]
+
+
+viewGroundItem : GroundItem -> Scene3d.Entity Meters
+viewGroundItem groundItem =
+    let
+        color =
+            case groundItem.item of
+                Coins _ ->
+                    Color.yellow
+
+                BronzeDagger ->
+                    Color.brown
+    in
+    Scene3d.quad (Material.color color)
+        (Point3d.translateBy (Vector3d.meters -0.5 -0.5 0) groundItem.location)
+        (Point3d.translateBy (Vector3d.meters 0.5 -0.5 0) groundItem.location)
+        (Point3d.translateBy (Vector3d.meters 0.5 0.5 0) groundItem.location)
+        (Point3d.translateBy (Vector3d.meters -0.5 0.5 0) groundItem.location)
 
 
 isCoins : Item -> Bool
