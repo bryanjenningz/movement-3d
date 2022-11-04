@@ -580,15 +580,16 @@ viewSidePanel : Model -> Html Msg
 viewSidePanel model =
     div [ style "width" "320px" ]
         [ div [ style "display" "flex" ]
-            [ sidePanelButton AttackStylePanel model "Attack Style"
+            [ sidePanelButton AttackStylePanel model "Attack Style / Stats"
             , sidePanelButton InventoryPanel model "Inventory"
             ]
         , case model.sidePanel of
             AttackStylePanel ->
                 div []
-                    [ text "Attack style"
-                    , div [ style "margin-bottom" "20px" ]
-                        [ viewAttackStyle model, viewXpBar model ]
+                    [ div [ style "text-align" "center", style "padding" "5px" ] [ text "Attack style" ]
+                    , viewAttackStyle model
+                    , div [ style "text-align" "center", style "padding" "5px" ] [ text "Stats" ]
+                    , viewSkills model
                     ]
 
             InventoryPanel ->
@@ -608,7 +609,7 @@ sidePanelButton sidePanel model buttonText =
                 ""
             )
         , style "height" "50px"
-        , style "flex-grow" "1"
+        , style "flex" "1"
         ]
         [ text buttonText ]
 
@@ -909,7 +910,7 @@ attackStyleButton attackStyle buttonText model =
     button
         [ onClick (SetAttackStyle attackStyle)
         , activeAttackStyle (model.attackStyle == attackStyle)
-        , style "flex-grow" "1"
+        , style "flex" "1"
         , style "height" (px 50)
         ]
         [ text buttonText ]
@@ -924,18 +925,48 @@ activeAttackStyle isActive =
         style "" ""
 
 
-viewXpBar : Model -> Html msg
-viewXpBar model =
-    div []
-        [ viewXp "Accuracy" model.accuracyXp
-        , viewXp "Strength" model.strengthXp
-        , viewXp "Defense" model.defenseXp
+viewSkills : Model -> Html msg
+viewSkills model =
+    div
+        [ style "display" "flex"
+        , style "flex-direction" "column"
+        , style "gap" "10px"
+        ]
+        [ viewSkill "Accuracy" model.accuracyXp
+        , viewSkill "Strength" model.strengthXp
+        , viewSkill "Defense" model.defenseXp
         ]
 
 
-viewXp : String -> Int -> Html msg
-viewXp skill xp =
-    div [] [ text (skill ++ " XP: " ++ String.fromInt xp) ]
+viewSkill : String -> Int -> Html msg
+viewSkill skill xp =
+    div
+        [ style "width" "100%"
+        , style "background-color" "#333"
+        , style "height" (px 50)
+        , style "display" "flex"
+        , style "justify-content" "center"
+        , style "align-items" "center"
+        ]
+        [ text (skill ++ " level: " ++ String.fromInt (xpToLevel xp) ++ " (" ++ String.fromInt xp ++ " XP)") ]
+
+
+xpToLevel : Int -> Int
+xpToLevel xp =
+    if xp < 15 then
+        1
+
+    else if xp < 35 then
+        2
+
+    else if xp < 60 then
+        3
+
+    else if xp < 90 then
+        4
+
+    else
+        5
 
 
 subscriptions : Model -> Sub Msg
