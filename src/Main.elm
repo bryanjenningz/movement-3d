@@ -632,6 +632,7 @@ viewGame model =
             , background = Scene3d.transparentBackground
             , dimensions = ( Pixels.pixels (round screenWidth), Pixels.pixels (round screenHeight) )
             }
+        , div [] (List.map (viewGroundItemText (getCamera model)) model.groundItems)
         , div []
             (List.map
                 (\mon ->
@@ -867,6 +868,31 @@ viewHealthBar camera health maxHealth point =
             ]
             []
         ]
+
+
+viewGroundItemText : Camera3d Meters Meters -> GroundItem -> Html msg
+viewGroundItemText camera groundItem =
+    let
+        location =
+            Point3d.Projection.toScreenSpace
+                camera
+                screen
+                (movePoint (Vector3d.meters 0 0 0.1) groundItem.location)
+                |> Point2d.toPixels
+
+        width =
+            90
+    in
+    div
+        [ style "position" "absolute"
+        , style "left" (px (location.x - (width / 2)))
+        , style "top" (px location.y)
+        , style "width" (px width)
+        , style "text-align" "center"
+        , style "font-size" (px 10)
+        , style "font-weight" "bold"
+        ]
+        [ text (Inventory.itemToString groundItem.item) ]
 
 
 viewAttackStyle : Model -> Html Msg

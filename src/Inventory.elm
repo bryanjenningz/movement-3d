@@ -1,4 +1,17 @@
-module Inventory exposing (GroundItem, Inventory, Item(..), dropItem, fromItems, groundItemDisappearTime, init, pickUpItem, toItems, viewGroundItem, viewInventory)
+module Inventory exposing
+    ( GroundItem
+    , Inventory
+    , Item(..)
+    , dropItem
+    , fromItems
+    , groundItemDisappearTime
+    , init
+    , itemToString
+    , pickUpItem
+    , toItems
+    , viewGroundItem
+    , viewInventory
+    )
 
 import Color
 import Html exposing (Html, div, text)
@@ -98,17 +111,24 @@ viewInventory (Inventory items) =
 
 
 viewItem : Maybe Item -> Html msg
-viewItem item =
+viewItem maybeItem =
     div [ class "item-box" ] <|
-        case item of
+        case maybeItem of
             Nothing ->
                 []
 
-            Just (Coins amount) ->
-                [ text ("Coins: " ++ String.fromInt amount) ]
+            Just item ->
+                [ text (itemToString item) ]
 
-            Just BronzeDagger ->
-                [ text "Bronze dagger" ]
+
+itemToString : Item -> String
+itemToString item =
+    case item of
+        Coins amount ->
+            "Coins (" ++ String.fromInt amount ++ ")"
+
+        BronzeDagger ->
+            "Bronze dagger"
 
 
 viewGroundItem : GroundItem -> Scene3d.Entity Meters
