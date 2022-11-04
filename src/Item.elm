@@ -11,4 +11,5 @@ type Item
 type alias GroundItem =
     { item : Item
     , location : Point3d Meters Meters
+    , disappearsAt : Int
     }
