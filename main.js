@@ -604,7 +604,7 @@ ${variant}`;
   var VERSION = "1.1.0";
   var TARGET_NAME = "My target name";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1667565918038"
+    "1667576871219"
   );
   var ORIGINAL_COMPILATION_MODE = "standard";
   var ORIGINAL_BROWSER_UI_POSITION = "BottomLeft";
@@ -15706,10 +15706,17 @@ var $author$project$Inventory$viewGroundItem = function (groundItem) {
 			A3($ianmackenzie$elm_geometry$Vector3d$meters, -0.5, 0.5, 0),
 			groundItem.location));
 };
+var $author$project$Inventory$itemToString = function (item) {
+	if (item.$ === 'Coins') {
+		var amount = item.a;
+		return 'Coins (' + ($elm$core$String$fromInt(amount) + ')');
+	} else {
+		return 'Bronze dagger';
+	}
+};
 var $author$project$Main$px = function (x) {
 	return $elm$core$String$fromFloat(x) + 'px';
 };
-var $author$project$Main$redDamage = '#d33030';
 var $ianmackenzie$elm_units$Quantity$ratio = F2(
 	function (_v0, _v1) {
 		var x = _v0.a;
@@ -15797,6 +15804,49 @@ var $ianmackenzie$elm_3d_camera$Point3d$Projection$toScreenSpace = F3(
 				A2($ianmackenzie$elm_units$Quantity$multiplyBy, halfNdcY, screenHeight));
 		}
 	});
+var $author$project$Main$viewGroundItemText = F2(
+	function (camera, groundItem) {
+		var width = 90;
+		var location = $ianmackenzie$elm_geometry$Point2d$toPixels(
+			A3(
+				$ianmackenzie$elm_3d_camera$Point3d$Projection$toScreenSpace,
+				camera,
+				$author$project$Main$screen,
+				A2(
+					$author$project$Main$movePoint,
+					A3($ianmackenzie$elm_geometry$Vector3d$meters, 0, 0, 0.1),
+					groundItem.location)));
+		return A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					A2($elm$html$Html$Attributes$style, 'position', 'absolute'),
+					A2(
+					$elm$html$Html$Attributes$style,
+					'left',
+					$author$project$Main$px(location.x - (width / 2))),
+					A2(
+					$elm$html$Html$Attributes$style,
+					'top',
+					$author$project$Main$px(location.y)),
+					A2(
+					$elm$html$Html$Attributes$style,
+					'width',
+					$author$project$Main$px(width)),
+					A2($elm$html$Html$Attributes$style, 'text-align', 'center'),
+					A2(
+					$elm$html$Html$Attributes$style,
+					'font-size',
+					$author$project$Main$px(10)),
+					A2($elm$html$Html$Attributes$style, 'font-weight', 'bold')
+				]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text(
+					$author$project$Inventory$itemToString(groundItem.item))
+				]));
+	});
+var $author$project$Main$redDamage = '#d33030';
 var $author$project$Main$viewHealthBar = F4(
 	function (camera, health, maxHealth, point) {
 		var healthBarWidth = 90;
@@ -16079,6 +16129,14 @@ var $author$project$Main$viewGame = function (model) {
 				_List_Nil,
 				A2(
 					$elm$core$List$map,
+					$author$project$Main$viewGroundItemText(
+						$author$project$Main$getCamera(model)),
+					model.groundItems)),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				A2(
+					$elm$core$List$map,
 					function (mon) {
 						if (mon.$ === 'AliveMonster') {
 							var monster = mon.a;
@@ -16168,7 +16226,7 @@ var $author$project$Main$sidePanelButton = F3(
 					'background-color',
 					_Utils_eq(model.sidePanel, sidePanel) ? $author$project$Main$redDamage : ''),
 					A2($elm$html$Html$Attributes$style, 'height', '50px'),
-					A2($elm$html$Html$Attributes$style, 'flex-grow', '1')
+					A2($elm$html$Html$Attributes$style, 'flex', '1')
 				]),
 			_List_fromArray(
 				[
@@ -16181,51 +16239,39 @@ var $author$project$Main$SetAttackStyle = function (a) {
 var $author$project$Main$activeAttackStyle = function (isActive) {
 	return isActive ? A2($elm$html$Html$Attributes$style, 'background-color', $author$project$Main$redDamage) : A2($elm$html$Html$Attributes$style, '', '');
 };
+var $author$project$Main$attackStyleButton = F3(
+	function (attackStyle, buttonText, model) {
+		return A2(
+			$elm$html$Html$button,
+			_List_fromArray(
+				[
+					$elm$html$Html$Events$onClick(
+					$author$project$Main$SetAttackStyle(attackStyle)),
+					$author$project$Main$activeAttackStyle(
+					_Utils_eq(model.attackStyle, attackStyle)),
+					A2($elm$html$Html$Attributes$style, 'flex', '1'),
+					A2(
+					$elm$html$Html$Attributes$style,
+					'height',
+					$author$project$Main$px(50))
+				]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text(buttonText)
+				]));
+	});
 var $author$project$Main$viewAttackStyle = function (model) {
 	return A2(
 		$elm$html$Html$div,
-		_List_Nil,
 		_List_fromArray(
 			[
-				A2(
-				$elm$html$Html$button,
-				_List_fromArray(
-					[
-						$elm$html$Html$Events$onClick(
-						$author$project$Main$SetAttackStyle($author$project$Main$AccuracyStyle)),
-						$author$project$Main$activeAttackStyle(
-						_Utils_eq(model.attackStyle, $author$project$Main$AccuracyStyle))
-					]),
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Accuracy')
-					])),
-				A2(
-				$elm$html$Html$button,
-				_List_fromArray(
-					[
-						$elm$html$Html$Events$onClick(
-						$author$project$Main$SetAttackStyle($author$project$Main$StrengthStyle)),
-						$author$project$Main$activeAttackStyle(
-						_Utils_eq(model.attackStyle, $author$project$Main$StrengthStyle))
-					]),
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Strength')
-					])),
-				A2(
-				$elm$html$Html$button,
-				_List_fromArray(
-					[
-						$elm$html$Html$Events$onClick(
-						$author$project$Main$SetAttackStyle($author$project$Main$DefenseStyle)),
-						$author$project$Main$activeAttackStyle(
-						_Utils_eq(model.attackStyle, $author$project$Main$DefenseStyle))
-					]),
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Defense')
-					]))
+				A2($elm$html$Html$Attributes$style, 'display', 'flex')
+			]),
+		_List_fromArray(
+			[
+				A3($author$project$Main$attackStyleButton, $author$project$Main$AccuracyStyle, 'Accuracy', model),
+				A3($author$project$Main$attackStyleButton, $author$project$Main$StrengthStyle, 'Strength', model),
+				A3($author$project$Main$attackStyleButton, $author$project$Main$DefenseStyle, 'Defense', model)
 			]));
 };
 var $elm$core$List$repeatHelp = F3(
@@ -16249,7 +16295,7 @@ var $elm$core$List$repeat = F2(
 	function (n, value) {
 		return A3($elm$core$List$repeatHelp, _List_Nil, n, value);
 	});
-var $author$project$Inventory$viewItem = function (item) {
+var $author$project$Inventory$viewItem = function (maybeItem) {
 	return A2(
 		$elm$html$Html$div,
 		_List_fromArray(
@@ -16257,23 +16303,15 @@ var $author$project$Inventory$viewItem = function (item) {
 				$elm$html$Html$Attributes$class('item-box')
 			]),
 		function () {
-			if (item.$ === 'Nothing') {
+			if (maybeItem.$ === 'Nothing') {
 				return _List_Nil;
 			} else {
-				if (item.a.$ === 'Coins') {
-					var amount = item.a.a;
-					return _List_fromArray(
-						[
-							$elm$html$Html$text(
-							'Coins: ' + $elm$core$String$fromInt(amount))
-						]);
-				} else {
-					var _v1 = item.a;
-					return _List_fromArray(
-						[
-							$elm$html$Html$text('Bronze dagger')
-						]);
-				}
+				var item = maybeItem.a;
+				return _List_fromArray(
+					[
+						$elm$html$Html$text(
+						$author$project$Inventory$itemToString(item))
+					]);
 			}
 		}());
 };
@@ -16293,26 +16331,46 @@ var $author$project$Inventory$viewInventory = function (_v0) {
 			]),
 		A2($elm$core$List$map, $author$project$Inventory$viewItem, paddedItems));
 };
-var $author$project$Main$viewXp = F2(
+var $author$project$Main$xpToLevel = function (xp) {
+	return (xp < 15) ? 1 : ((xp < 35) ? 2 : ((xp < 60) ? 3 : ((xp < 90) ? 4 : 5)));
+};
+var $author$project$Main$viewSkill = F2(
 	function (skill, xp) {
 		return A2(
 			$elm$html$Html$div,
-			_List_Nil,
+			_List_fromArray(
+				[
+					A2($elm$html$Html$Attributes$style, 'width', '100%'),
+					A2($elm$html$Html$Attributes$style, 'background-color', '#333'),
+					A2(
+					$elm$html$Html$Attributes$style,
+					'height',
+					$author$project$Main$px(50)),
+					A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+					A2($elm$html$Html$Attributes$style, 'justify-content', 'center'),
+					A2($elm$html$Html$Attributes$style, 'align-items', 'center')
+				]),
 			_List_fromArray(
 				[
 					$elm$html$Html$text(
-					skill + (' XP: ' + $elm$core$String$fromInt(xp)))
+					skill + (' level: ' + ($elm$core$String$fromInt(
+						$author$project$Main$xpToLevel(xp)) + (' (' + ($elm$core$String$fromInt(xp) + ' XP)')))))
 				]));
 	});
-var $author$project$Main$viewXpBar = function (model) {
+var $author$project$Main$viewSkills = function (model) {
 	return A2(
 		$elm$html$Html$div,
-		_List_Nil,
 		_List_fromArray(
 			[
-				A2($author$project$Main$viewXp, 'Accuracy', model.accuracyXp),
-				A2($author$project$Main$viewXp, 'Strength', model.strengthXp),
-				A2($author$project$Main$viewXp, 'Defense', model.defenseXp)
+				A2($elm$html$Html$Attributes$style, 'display', 'flex'),
+				A2($elm$html$Html$Attributes$style, 'flex-direction', 'column'),
+				A2($elm$html$Html$Attributes$style, 'gap', '10px')
+			]),
+		_List_fromArray(
+			[
+				A2($author$project$Main$viewSkill, 'Accuracy', model.accuracyXp),
+				A2($author$project$Main$viewSkill, 'Strength', model.strengthXp),
+				A2($author$project$Main$viewSkill, 'Defense', model.defenseXp)
 			]));
 };
 var $author$project$Main$viewSidePanel = function (model) {
@@ -16332,7 +16390,7 @@ var $author$project$Main$viewSidePanel = function (model) {
 					]),
 				_List_fromArray(
 					[
-						A3($author$project$Main$sidePanelButton, $author$project$Main$AttackStylePanel, model, 'Attack Style'),
+						A3($author$project$Main$sidePanelButton, $author$project$Main$AttackStylePanel, model, 'Attack Style / Stats'),
 						A3($author$project$Main$sidePanelButton, $author$project$Main$InventoryPanel, model, 'Inventory')
 					])),
 				function () {
@@ -16343,18 +16401,30 @@ var $author$project$Main$viewSidePanel = function (model) {
 						_List_Nil,
 						_List_fromArray(
 							[
-								$elm$html$Html$text('Attack style'),
 								A2(
 								$elm$html$Html$div,
 								_List_fromArray(
 									[
-										A2($elm$html$Html$Attributes$style, 'margin-bottom', '20px')
+										A2($elm$html$Html$Attributes$style, 'text-align', 'center'),
+										A2($elm$html$Html$Attributes$style, 'padding', '5px')
 									]),
 								_List_fromArray(
 									[
-										$author$project$Main$viewAttackStyle(model),
-										$author$project$Main$viewXpBar(model)
-									]))
+										$elm$html$Html$text('Attack style')
+									])),
+								$author$project$Main$viewAttackStyle(model),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										A2($elm$html$Html$Attributes$style, 'text-align', 'center'),
+										A2($elm$html$Html$Attributes$style, 'padding', '5px')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Stats')
+									])),
+								$author$project$Main$viewSkills(model)
 							]));
 				} else {
 					return $author$project$Inventory$viewInventory(model.inventory);
