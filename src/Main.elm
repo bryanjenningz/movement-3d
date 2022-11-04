@@ -18,7 +18,7 @@ import Camera3d exposing (Camera3d)
 import Color exposing (Color)
 import GameMap
 import Html exposing (Attribute, Html, button, div, text)
-import Html.Attributes exposing (style)
+import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick)
 import Inventory exposing (Inventory)
 import Json.Decode as Decode
@@ -506,63 +506,69 @@ mapPoint f point =
 view : Model -> Html Msg
 view model =
     div []
-        [ div
-            [ style "border" "1px solid white"
-            , style "display" "inline-block"
-            , style "position" "relative"
-            , style "overflow" "hidden"
-            , style "user-select" "none"
-            ]
-            [ Scene3d.unlit
-                { entities =
-                    GameMap.tiles
-                        ++ (viewSquare (playerColor model.appearance) model.location
-                                :: List.map viewMonster model.monsters
-                           )
-                , camera = getCamera model
-                , clipDepth = Length.meters 1
-                , background = Scene3d.transparentBackground
-                , dimensions = ( Pixels.pixels (round screenWidth), Pixels.pixels (round screenHeight) )
-                }
-            , div []
-                (List.map
-                    (\mon ->
-                        case mon of
-                            AliveMonster monster ->
-                                viewHealthBar (getCamera model)
-                                    monster.health
-                                    monster.maxHealth
-                                    monster.location
-
-                            DeadMonster _ ->
-                                text ""
-                    )
-                    model.monsters
-                )
-            , viewPlayerText model
-            , viewHealthBar (getCamera model)
-                model.health
-                model.maxHealth
-                model.location
-            , viewHits (getCamera model) model.hits model.location
-            , div [] (List.map (viewMonsterText (getCamera model)) model.monsters)
-            , div []
-                (List.map
-                    (\mon ->
-                        case mon of
-                            AliveMonster monster ->
-                                viewHits (getCamera model) monster.hits monster.location
-
-                            DeadMonster _ ->
-                                text ""
-                    )
-                    model.monsters
-                )
+        [ div [ class "game-container" ]
+            [ viewGame model
+            , Inventory.viewInventory model.inventory
             ]
         , div [ style "margin-bottom" "20px" ] [ viewAttackStyle model, viewXpBar model ]
         , div [] [ text "Use left and right arrow keys to rotate the screen." ]
         , div [] [ text "Click on the screen to move to that location." ]
         , div [] [ text "Click on a monster to attack it." ]
+        ]
+
+
+viewGame : Model -> Html Msg
+viewGame model =
+    div
+        [ style "position" "relative"
+        , style "overflow" "hidden"
+        , style "user-select" "none"
+        ]
+        [ Scene3d.unlit
+            { entities =
+                GameMap.tiles
+                    ++ (viewSquare (playerColor model.appearance) model.location
+                            :: List.map viewMonster model.monsters
+                       )
+            , camera = getCamera model
+            , clipDepth = Length.meters 1
+            , background = Scene3d.transparentBackground
+            , dimensions = ( Pixels.pixels (round screenWidth), Pixels.pixels (round screenHeight) )
+            }
+        , div []
+            (List.map
+                (\mon ->
+                    case mon of
+                        AliveMonster monster ->
+                            viewHealthBar (getCamera model)
+                                monster.health
+                                monster.maxHealth
+                                monster.location
+
+                        DeadMonster _ ->
+                            text ""
+                )
+                model.monsters
+            )
+        , viewPlayerText model
+        , viewHealthBar (getCamera model)
+            model.health
+            model.maxHealth
+            model.location
+        , viewHits (getCamera model) model.hits model.location
+        , div [] (List.map (viewMonsterText (getCamera model)) model.monsters)
+        , div []
+            (List.map
+                (\mon ->
+                    case mon of
+                        AliveMonster monster ->
+                            viewHits (getCamera model) monster.hits monster.location
+
+                        DeadMonster _ ->
+                            text ""
+                )
+                model.monsters
+            )
         ]
 
 
