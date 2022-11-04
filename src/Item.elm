@@ -1,4 +1,4 @@
-module Item exposing (GroundItem, Item(..), dropItem)
+module Item exposing (GroundItem, Item(..), dropItem, pickUpItem)
 
 import Length exposing (Meters)
 import Point3d exposing (Point3d)
@@ -25,6 +25,11 @@ dropItem location time item =
     , location = location
     , disappearsAt = time + groundItemDisappearTime
     }
+
+
+pickUpItem : GroundItem -> Item
+pickUpItem groundItem =
+    groundItem.item
 
 
 groundItemDisappearTime : Int
