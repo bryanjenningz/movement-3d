@@ -21,7 +21,7 @@ import GameMap
 import Html exposing (Attribute, Html, button, div, text)
 import Html.Attributes exposing (class, style)
 import Html.Events exposing (onClick)
-import Inventory exposing (GroundItem, Inventory)
+import Inventory exposing (GroundItem, Inventory, Item(..))
 import Json.Decode as Decode
 import Length exposing (Meters)
 import Monster exposing (AliveMonsterState, Hit, Location, Monster(..), TravelPath)
@@ -454,6 +454,26 @@ applyAttackRound playerDamage monsterDamage model =
 
                 disappearTime =
                     model.now + 500
+
+                newGroundItems =
+                    case Monster.findAliveMonster fightingMonster.id newMonsters of
+                        Nothing ->
+                            if remainderBy 2 model.now == 0 then
+                                { item = Coins 2
+                                , location = fightingMonster.location
+                                , disappearsAt = model.now + Inventory.groundItemDisappearTime
+                                }
+                                    :: model.groundItems
+
+                            else
+                                { item = BronzeDagger
+                                , location = fightingMonster.location
+                                , disappearsAt = model.now + Inventory.groundItemDisappearTime
+                                }
+                                    :: model.groundItems
+
+                        Just _ ->
+                            model.groundItems
             in
             { model
                 | health = max 1 (model.health - playerDamage)
@@ -468,6 +488,7 @@ applyAttackRound playerDamage monsterDamage model =
                     }
                         :: model.hits
                 , monsters = newMonsters
+                , groundItems = newGroundItems
                 , appearance =
                     case Monster.findAliveMonster fightingMonster.id newMonsters of
                         Nothing ->

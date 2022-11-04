@@ -1,4 +1,4 @@
-module Inventory exposing (GroundItem, Inventory, Item(..), dropItem, fromItems, init, pickUpItem, toItems, viewGroundItem, viewInventory)
+module Inventory exposing (GroundItem, Inventory, Item(..), dropItem, fromItems, groundItemDisappearTime, init, pickUpItem, toItems, viewGroundItem, viewInventory)
 
 import Color
 import Html exposing (Html, div, text)
@@ -120,7 +120,7 @@ viewGroundItem groundItem =
                     Color.yellow
 
                 BronzeDagger ->
-                    Color.brown
+                    Color.darkBrown
     in
     Scene3d.quad (Material.color color)
         (Point3d.translateBy (Vector3d.meters -0.5 -0.5 0) groundItem.location)
