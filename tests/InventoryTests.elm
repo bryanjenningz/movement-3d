@@ -28,8 +28,18 @@ dropItemTests =
         [ test "Drops an item from the inventory" <|
             \_ ->
                 Expect.equalLists
-                    [ dropItem groundItemLocation 0 0 (fromItems [ Coins 1 ]) ]
-                    [ ( Just groundCoins, init ) ]
+                    [ dropItem groundItemLocation 0 0 (fromItems [ Coins 1 ])
+                    , dropItem groundItemLocation 0 1 (fromItems [ Coins 1 ])
+                    , dropItem groundItemLocation 0 0 init
+                    , dropItem groundItemLocation 0 0 (fromItems [ BronzeDagger, Coins 1, BronzeDagger ])
+                    , dropItem groundItemLocation 0 2 (fromItems [ BronzeDagger, Coins 1, BronzeDagger ])
+                    ]
+                    [ ( Just groundCoins, init )
+                    , ( Nothing, fromItems [ Coins 1 ] )
+                    , ( Nothing, init )
+                    , ( Just groundBronzeDagger, fromItems [ Coins 1, BronzeDagger ] )
+                    , ( Just groundBronzeDagger, fromItems [ BronzeDagger, Coins 1 ] )
+                    ]
         ]
 
 
