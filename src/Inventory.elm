@@ -1,5 +1,7 @@
-module Inventory exposing (GroundItem, Inventory, Item(..), dropItem, fromItems, init, pickUpItem, toItems)
+module Inventory exposing (GroundItem, Inventory, Item(..), dropItem, fromItems, init, pickUpItem, toItems, viewInventory)
 
+import Html exposing (Html, div, text)
+import Html.Attributes exposing (class)
 import Length exposing (Meters)
 import List.Extra as List
 import Point3d exposing (Point3d)
@@ -77,6 +79,31 @@ pickUpItem groundItem (Inventory items) =
 
             else
                 Inventory (items ++ [ groundItem.item ])
+
+
+viewInventory : Inventory -> Html msg
+viewInventory (Inventory items) =
+    let
+        paddedItems : List (Maybe Item)
+        paddedItems =
+            List.take maxInventoryItems
+                (List.map Just items ++ List.repeat maxInventoryItems Nothing)
+    in
+    div [ class "inventory" ] (List.map viewItem paddedItems)
+
+
+viewItem : Maybe Item -> Html msg
+viewItem item =
+    div [ class "item-box" ] <|
+        case item of
+            Nothing ->
+                []
+
+            Just (Coins amount) ->
+                [ text ("Coins: " ++ String.fromInt amount) ]
+
+            Just BronzeDagger ->
+                [ text "Bronze dagger" ]
 
 
 isCoins : Item -> Bool

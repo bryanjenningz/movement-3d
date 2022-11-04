@@ -1,10 +1,12 @@
 module InventoryTests exposing (..)
 
 import Expect
-import Inventory exposing (GroundItem, Item(..), dropItem, fromItems, init, pickUpItem, toItems)
+import Inventory exposing (GroundItem, Item(..), dropItem, fromItems, init, pickUpItem, toItems, viewInventory)
 import Length exposing (Meters)
 import Point3d exposing (Point3d)
 import Test exposing (Test, describe, test)
+import Test.Html.Query as Query
+import Test.Html.Selector exposing (class, classes)
 
 
 groundItemLocation : Point3d Meters Meters
@@ -61,4 +63,21 @@ pickUpItemTests =
                     , [ BronzeDagger, Coins 1, BronzeDagger ]
                     , List.repeat 28 BronzeDagger
                     ]
+        ]
+
+
+viewInventoryTests : Test
+viewInventoryTests =
+    describe "viewInventory"
+        [ test "Shows an inventory" <|
+            \_ ->
+                viewInventory init
+                    |> Query.fromHtml
+                    |> Query.has [ class "inventory" ]
+        , test "Shows an inventory with 28 item boxes" <|
+            \_ ->
+                viewInventory init
+                    |> Query.fromHtml
+                    |> Query.findAll [ class "item-box" ]
+                    |> Query.count (Expect.equal 28)
         ]
