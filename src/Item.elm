@@ -1,7 +1,11 @@
-module Item exposing (GroundItem, Item(..))
+module Item exposing (GroundItem, Item(..), dropItem)
 
 import Length exposing (Meters)
 import Point3d exposing (Point3d)
+
+
+type alias Location =
+    Point3d Meters Meters
 
 
 type Item
@@ -10,6 +14,20 @@ type Item
 
 type alias GroundItem =
     { item : Item
-    , location : Point3d Meters Meters
+    , location : Location
     , disappearsAt : Int
     }
+
+
+dropItem : Location -> Int -> Item -> GroundItem
+dropItem location time item =
+    { item = item
+    , location = location
+    , disappearsAt = time + groundItemDisappearTime
+    }
+
+
+groundItemDisappearTime : Int
+groundItemDisappearTime =
+    -- Ground items disappear after 20 seconds
+    20000
