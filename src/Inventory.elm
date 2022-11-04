@@ -64,21 +64,22 @@ pickUpItem groundItem (Inventory items) =
         Coins amount ->
             case List.findIndex isCoins items of
                 Nothing ->
-                    if List.length items >= maxInventoryItems then
-                        Inventory items
-
-                    else
-                        Inventory (items ++ [ groundItem.item ])
+                    appendItem groundItem.item (Inventory items)
 
                 Just coinsIndex ->
                     Inventory (List.updateAt coinsIndex (addCoins amount) items)
 
         BronzeDagger ->
-            if List.length items >= maxInventoryItems then
-                Inventory items
+            appendItem groundItem.item (Inventory items)
 
-            else
-                Inventory (items ++ [ groundItem.item ])
+
+appendItem : Item -> Inventory -> Inventory
+appendItem item (Inventory items) =
+    if List.length items >= maxInventoryItems then
+        Inventory items
+
+    else
+        Inventory (items ++ [ item ])
 
 
 viewInventory : Inventory -> Html msg
