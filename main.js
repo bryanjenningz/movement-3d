@@ -1,7 +1,13 @@
-// elm-watch hot {"version":"1.0.2","webSocketPort":44269}
+// elm-watch hot {"version":"1.1.0","targetName":"My target name","webSocketPort":44269}
 "use strict";
 (() => {
   // node_modules/tiny-decoders/index.mjs
+  function boolean(value) {
+    if (typeof value !== "boolean") {
+      throw new DecoderError({ tag: "boolean", got: value });
+    }
+    return value;
+  }
   function number(value) {
     if (typeof value !== "number") {
       throw new DecoderError({ tag: "number", got: value });
@@ -178,6 +184,22 @@
         knownTypes: Object.keys(mapping),
         got: value
       });
+    };
+  }
+  function optional(decoder, defaultValue) {
+    return function optionalDecoder(value) {
+      if (value === void 0) {
+        return defaultValue;
+      }
+      try {
+        return decoder(value);
+      } catch (error) {
+        const newError = DecoderError.at(error);
+        if (newError.path.length === 0) {
+          newError.optional = true;
+        }
+        throw newError;
+      }
     };
   }
   function chain(decoder, next) {
@@ -400,30 +422,85 @@ ${variant}`;
   }
 
   // src/Types.ts
+  var AbsolutePath = fieldsAuto({
+    tag: () => "AbsolutePath",
+    absolutePath: string
+  });
   var CompilationMode = stringUnion({
     debug: null,
     standard: null,
     optimize: null
+  });
+  var BrowserUiPosition = stringUnion({
+    TopLeft: null,
+    TopRight: null,
+    BottomLeft: null,
+    BottomRight: null
   });
 
   // client/WebSocketMessages.ts
   var FocusedTabAcknowledged = fieldsAuto({
     tag: () => "FocusedTabAcknowledged"
   });
+  var OpenEditorError = fieldsUnion("tag", {
+    EnvNotSet: fieldsAuto({
+      tag: () => "EnvNotSet"
+    }),
+    CommandFailed: fieldsAuto({
+      tag: () => "CommandFailed",
+      message: string
+    })
+  });
+  var OpenEditorFailed = fieldsAuto({
+    tag: () => "OpenEditorFailed",
+    error: OpenEditorError
+  });
+  var ErrorLocation = fieldsUnion("tag", {
+    FileOnly: fieldsAuto({
+      tag: () => "FileOnly",
+      file: AbsolutePath
+    }),
+    FileWithLineAndColumn: fieldsAuto({
+      tag: () => "FileWithLineAndColumn",
+      file: AbsolutePath,
+      line: number,
+      column: number
+    }),
+    Target: fieldsAuto({
+      tag: () => "Target",
+      targetName: string
+    })
+  });
+  var CompileError = fieldsAuto({
+    title: string,
+    location: optional(ErrorLocation),
+    htmlContent: string
+  });
   var StatusChanged = fieldsAuto({
     tag: () => "StatusChanged",
     status: fieldsUnion("tag", {
       AlreadyUpToDate: fieldsAuto({
         tag: () => "AlreadyUpToDate",
-        compilationMode: CompilationMode
+        compilationMode: CompilationMode,
+        browserUiPosition: BrowserUiPosition
       }),
       Busy: fieldsAuto({
         tag: () => "Busy",
-        compilationMode: CompilationMode
+        compilationMode: CompilationMode,
+        browserUiPosition: BrowserUiPosition
       }),
       CompileError: fieldsAuto({
         tag: () => "CompileError",
-        compilationMode: CompilationMode
+        compilationMode: CompilationMode,
+        browserUiPosition: BrowserUiPosition,
+        openErrorOverlay: boolean,
+        errors: array(CompileError),
+        foregroundColor: string,
+        backgroundColor: string
+      }),
+      ElmJsonError: fieldsAuto({
+        tag: () => "ElmJsonError",
+        error: string
       }),
       ClientError: fieldsAuto({
         tag: () => "ClientError",
@@ -435,13 +512,15 @@ ${variant}`;
     tag: () => "SuccessfullyCompiled",
     code: string,
     elmCompiledTimestamp: number,
-    compilationMode: CompilationMode
+    compilationMode: CompilationMode,
+    browserUiPosition: BrowserUiPosition
   });
   var SuccessfullyCompiledButRecordFieldsChanged = fieldsAuto({
     tag: () => "SuccessfullyCompiledButRecordFieldsChanged"
   });
   var WebSocketToClientMessage = fieldsUnion("tag", {
     FocusedTabAcknowledged,
+    OpenEditorFailed,
     StatusChanged,
     SuccessfullyCompiled,
     SuccessfullyCompiledButRecordFieldsChanged
@@ -451,8 +530,22 @@ ${variant}`;
       tag: () => "ChangedCompilationMode",
       compilationMode: CompilationMode
     }),
+    ChangedBrowserUiPosition: fieldsAuto({
+      tag: () => "ChangedBrowserUiPosition",
+      browserUiPosition: BrowserUiPosition
+    }),
+    ChangedOpenErrorOverlay: fieldsAuto({
+      tag: () => "ChangedOpenErrorOverlay",
+      openErrorOverlay: boolean
+    }),
     FocusedTab: fieldsAuto({
       tag: () => "FocusedTab"
+    }),
+    PressedOpenEditor: fieldsAuto({
+      tag: () => "PressedOpenEditor",
+      file: AbsolutePath,
+      line: number,
+      column: number
     })
   });
   function decodeWebSocketToClientMessage(message) {
@@ -468,119 +561,158 @@ ${variant}`;
   }
 
   // client/client.ts
-  window.__ELM_WATCH_MOCKED_TIMINGS ?? (window.__ELM_WATCH_MOCKED_TIMINGS = false);
-  window.__ELM_WATCH_WEBSOCKET_TIMEOUT ?? (window.__ELM_WATCH_WEBSOCKET_TIMEOUT = 1e3);
-  window.__ELM_WATCH_ON_INIT ?? (window.__ELM_WATCH_ON_INIT = () => {
+  var window = globalThis;
+  var IS_WEB_WORKER = window.window === void 0;
+  var { __ELM_WATCH } = window;
+  if (typeof __ELM_WATCH !== "object" || __ELM_WATCH === null) {
+    __ELM_WATCH = {};
+    Object.defineProperty(window, "__ELM_WATCH", { value: __ELM_WATCH });
+  }
+  __ELM_WATCH.MOCKED_TIMINGS ?? (__ELM_WATCH.MOCKED_TIMINGS = false);
+  __ELM_WATCH.WEBSOCKET_TIMEOUT ?? (__ELM_WATCH.WEBSOCKET_TIMEOUT = 1e3);
+  __ELM_WATCH.ON_INIT ?? (__ELM_WATCH.ON_INIT = () => {
   });
-  window.__ELM_WATCH_ON_RENDER ?? (window.__ELM_WATCH_ON_RENDER = () => {
+  __ELM_WATCH.ON_RENDER ?? (__ELM_WATCH.ON_RENDER = () => {
   });
-  window.__ELM_WATCH_ON_REACHED_IDLE_STATE ?? (window.__ELM_WATCH_ON_REACHED_IDLE_STATE = () => {
+  __ELM_WATCH.ON_REACHED_IDLE_STATE ?? (__ELM_WATCH.ON_REACHED_IDLE_STATE = () => {
   });
-  window.__ELM_WATCH_RELOAD_STATUSES ?? (window.__ELM_WATCH_RELOAD_STATUSES = {});
+  __ELM_WATCH.RELOAD_STATUSES ?? (__ELM_WATCH.RELOAD_STATUSES = {});
   var RELOAD_MESSAGE_KEY = "__elmWatchReloadMessage";
-  window.__ELM_WATCH_RELOAD_PAGE ?? (window.__ELM_WATCH_RELOAD_PAGE = (message) => {
+  var RELOAD_TARGET_NAME_KEY_PREFIX = "__elmWatchReloadTarget__";
+  __ELM_WATCH.RELOAD_PAGE ?? (__ELM_WATCH.RELOAD_PAGE = (message) => {
     if (message !== void 0) {
       try {
         window.sessionStorage.setItem(RELOAD_MESSAGE_KEY, message);
       } catch {
       }
     }
-    window.location.reload();
+    if (IS_WEB_WORKER) {
+      if (message !== void 0) {
+        console.info(message);
+      }
+      console.error(
+        message === void 0 ? "elm-watch: You need to reload the page! I seem to be running in a Web Worker, so I can\u2019t do it for you." : `elm-watch: You need to reload the page! I seem to be running in a Web Worker, so I couldn\u2019t actually reload the page (see above).`
+      );
+    } else {
+      window.location.reload();
+    }
   });
-  window.__ELM_WATCH_KILL_MATCHING ?? (window.__ELM_WATCH_KILL_MATCHING = () => Promise.resolve());
-  window.__ELM_WATCH_DISCONNECT ?? (window.__ELM_WATCH_DISCONNECT = () => {
+  __ELM_WATCH.KILL_MATCHING ?? (__ELM_WATCH.KILL_MATCHING = () => Promise.resolve());
+  __ELM_WATCH.DISCONNECT ?? (__ELM_WATCH.DISCONNECT = () => {
   });
-  window.__ELM_WATCH_LOG_DEBUG ?? (window.__ELM_WATCH_LOG_DEBUG = console.debug);
-  var VERSION = "1.0.2";
+  __ELM_WATCH.LOG_DEBUG ?? (__ELM_WATCH.LOG_DEBUG = console.debug);
+  var VERSION = "1.1.0";
   var TARGET_NAME = "My target name";
   var INITIAL_ELM_COMPILED_TIMESTAMP = Number(
-    "1667389220346"
+    "1667565918038"
   );
   var ORIGINAL_COMPILATION_MODE = "standard";
+  var ORIGINAL_BROWSER_UI_POSITION = "BottomLeft";
   var WEBSOCKET_PORT = "44269";
   var CONTAINER_ID = "elm-watch";
   var DEBUG = String("false") === "true";
+  var BROWSER_UI_MOVED_EVENT = "BROWSER_UI_MOVED_EVENT";
+  var CLOSE_ALL_ERROR_OVERLAYS_EVENT = "CLOSE_ALL_ERROR_OVERLAYS_EVENT";
+  var JUST_CHANGED_BROWSER_UI_POSITION_TIMEOUT = 2e3;
   var SEND_KEY_DO_NOT_USE_ALL_THE_TIME = Symbol(
     "This value is supposed to only be obtained via `Status`."
   );
   function logDebug(...args) {
     if (DEBUG) {
-      window.__ELM_WATCH_LOG_DEBUG(...args);
+      __ELM_WATCH.LOG_DEBUG(...args);
+    }
+  }
+  function parseBrowseUiPositionWithFallback(value) {
+    try {
+      return BrowserUiPosition(value);
+    } catch {
+      return ORIGINAL_BROWSER_UI_POSITION;
     }
   }
   function run() {
+    let elmCompiledTimestampBeforeReload = void 0;
     try {
       const message = window.sessionStorage.getItem(RELOAD_MESSAGE_KEY);
       if (message !== null) {
         console.info(message);
         window.sessionStorage.removeItem(RELOAD_MESSAGE_KEY);
       }
+      const key = RELOAD_TARGET_NAME_KEY_PREFIX + TARGET_NAME;
+      const previous = window.sessionStorage.getItem(key);
+      if (previous !== null) {
+        const number2 = Number(previous);
+        if (Number.isFinite(number2)) {
+          elmCompiledTimestampBeforeReload = number2;
+        }
+        window.sessionStorage.removeItem(key);
+      }
     } catch {
     }
-    const container = getOrCreateContainer();
-    const { shadowRoot } = container;
-    if (shadowRoot === null) {
-      throw new Error(
-        `elm-watch: Cannot set up hot reload, because an element with ID ${CONTAINER_ID} exists, but \`.shadowRoot\` is null!`
-      );
-    }
-    let root = shadowRoot.querySelector(`.${CLASS.root}`);
-    if (root === null) {
-      root = h(HTMLDivElement, { className: CLASS.root });
-      shadowRoot.append(root);
-    }
-    const existingTargetRoot = Array.from(root.children).find(
-      (element) => element.getAttribute("data-target") === TARGET_NAME
-    );
-    if (existingTargetRoot !== void 0) {
-      return;
-    }
-    const targetRoot = createTargetRoot(TARGET_NAME);
-    root.append(targetRoot);
+    const elements = IS_WEB_WORKER ? void 0 : getOrCreateTargetRoot();
+    const browserUiPosition = elements === void 0 ? ORIGINAL_BROWSER_UI_POSITION : parseBrowseUiPositionWithFallback(elements.container.dataset.position);
     const getNow = () => new Date();
     runTeaProgram({
-      initMutable: initMutable(getNow, targetRoot),
-      init: init(getNow()),
+      initMutable: initMutable(getNow, elements),
+      init: init(getNow(), browserUiPosition, elmCompiledTimestampBeforeReload),
       update: (msg, model) => {
         const [updatedModel, cmds] = update(msg, model);
         const modelChanged = updatedModel !== model;
+        const reloadTrouble = model.status.tag !== updatedModel.status.tag && updatedModel.status.tag === "WaitingForReload" && updatedModel.elmCompiledTimestamp === updatedModel.elmCompiledTimestampBeforeReload;
         const newModel = modelChanged ? {
           ...updatedModel,
-          previousStatusTag: model.status.tag
+          previousStatusTag: model.status.tag,
+          uiExpanded: reloadTrouble ? true : updatedModel.uiExpanded
         } : model;
+        const oldErrorOverlay = getErrorOverlay(model.status);
+        const newErrorOverlay = getErrorOverlay(newModel.status);
         const allCmds = modelChanged ? [
           ...cmds,
           {
             tag: "UpdateGlobalStatus",
-            reloadStatus: statusToReloadStatus(newModel.status)
+            reloadStatus: statusToReloadStatus(newModel),
+            elmCompiledTimestamp: newModel.elmCompiledTimestamp
+          },
+          newModel.status.tag === newModel.previousStatusTag && oldErrorOverlay?.openErrorOverlay === newErrorOverlay?.openErrorOverlay ? { tag: "NoCmd" } : {
+            tag: "UpdateErrorOverlay",
+            errors: newErrorOverlay === void 0 || !newErrorOverlay.openErrorOverlay ? /* @__PURE__ */ new Map() : newErrorOverlay.errors,
+            sendKey: statusToSpecialCaseSendKey(newModel.status)
           },
           {
             tag: "Render",
             model: newModel,
             manageFocus: msg.tag === "UiMsg"
-          }
+          },
+          model.browserUiPosition === newModel.browserUiPosition ? { tag: "NoCmd" } : {
+            tag: "SetBrowserUiPosition",
+            browserUiPosition: newModel.browserUiPosition
+          },
+          reloadTrouble ? { tag: "TriggerReachedIdleState", reason: "ReloadTrouble" } : { tag: "NoCmd" }
         ] : cmds;
         logDebug(`${msg.tag} (${TARGET_NAME})`, msg, newModel, allCmds);
         return [newModel, allCmds];
       },
-      runCmd: runCmd(getNow, targetRoot)
+      runCmd: runCmd(getNow, elements)
     }).catch((error) => {
       console.error("elm-watch: Unexpectedly exited with error:", error);
     });
   }
-  function statusToReloadStatus(status) {
-    switch (status.tag) {
+  function getErrorOverlay(status) {
+    return "errorOverlay" in status ? status.errorOverlay : void 0;
+  }
+  function statusToReloadStatus(model) {
+    switch (model.status.tag) {
       case "Busy":
       case "Connecting":
         return { tag: "MightWantToReload" };
       case "CompileError":
+      case "ElmJsonError":
       case "EvalError":
       case "Idle":
       case "SleepingBeforeReconnect":
       case "UnexpectedError":
         return { tag: "NoReloadWanted" };
       case "WaitingForReload":
-        return { tag: "ReloadRequested", reasons: status.reasons };
+        return model.elmCompiledTimestamp === model.elmCompiledTimestampBeforeReload ? { tag: "NoReloadWanted" } : { tag: "ReloadRequested", reasons: model.status.reasons };
     }
   }
   function statusToStatusType(statusTag) {
@@ -593,9 +725,26 @@ ${variant}`;
       case "WaitingForReload":
         return "Waiting";
       case "CompileError":
+      case "ElmJsonError":
       case "EvalError":
       case "UnexpectedError":
         return "Error";
+    }
+  }
+  function statusToSpecialCaseSendKey(status) {
+    switch (status.tag) {
+      case "CompileError":
+      case "Idle":
+        return status.sendKey;
+      case "Busy":
+        return SEND_KEY_DO_NOT_USE_ALL_THE_TIME;
+      case "Connecting":
+      case "SleepingBeforeReconnect":
+      case "WaitingForReload":
+      case "ElmJsonError":
+      case "EvalError":
+      case "UnexpectedError":
+        return void 0;
     }
   }
   function getOrCreateContainer() {
@@ -607,12 +756,73 @@ ${variant}`;
     container.style.all = "unset";
     container.style.position = "fixed";
     container.style.zIndex = "2147483647";
-    container.style.left = "-1px";
-    container.style.bottom = "-1px";
     const shadowRoot = container.attachShadow({ mode: "open" });
     shadowRoot.append(h(HTMLStyleElement, {}, CSS));
     document.documentElement.append(container);
     return container;
+  }
+  function getOrCreateTargetRoot() {
+    const container = getOrCreateContainer();
+    const { shadowRoot } = container;
+    if (shadowRoot === null) {
+      throw new Error(
+        `elm-watch: Cannot set up hot reload, because an element with ID ${CONTAINER_ID} exists, but \`.shadowRoot\` is null!`
+      );
+    }
+    let overlay = shadowRoot.querySelector(`.${CLASS.overlay}`);
+    if (overlay === null) {
+      overlay = h(HTMLDivElement, {
+        className: CLASS.overlay,
+        attrs: { "data-test-id": "Overlay" }
+      });
+      shadowRoot.append(overlay);
+    }
+    let overlayCloseButton = shadowRoot.querySelector(
+      `.${CLASS.overlayCloseButton}`
+    );
+    if (overlayCloseButton === null) {
+      const closeAllErrorOverlays = () => {
+        shadowRoot.dispatchEvent(new CustomEvent(CLOSE_ALL_ERROR_OVERLAYS_EVENT));
+      };
+      overlayCloseButton = h(HTMLButtonElement, {
+        className: CLASS.overlayCloseButton,
+        attrs: {
+          "aria-label": "Close error overlay",
+          "data-test-id": "OverlayCloseButton"
+        },
+        onclick: closeAllErrorOverlays
+      });
+      shadowRoot.append(overlayCloseButton);
+      const overlayNonNull = overlay;
+      window.addEventListener(
+        "keydown",
+        (event) => {
+          if (overlayNonNull.hasChildNodes() && event.key === "Escape") {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            closeAllErrorOverlays();
+          }
+        },
+        true
+      );
+    }
+    let root = shadowRoot.querySelector(`.${CLASS.root}`);
+    if (root === null) {
+      root = h(HTMLDivElement, { className: CLASS.root });
+      shadowRoot.append(root);
+    }
+    const targetRoot = createTargetRoot(TARGET_NAME);
+    root.append(targetRoot);
+    const elements = {
+      container,
+      shadowRoot,
+      overlay,
+      overlayCloseButton,
+      root,
+      targetRoot
+    };
+    setBrowserUiPosition(ORIGINAL_BROWSER_UI_POSITION, elements);
+    return elements;
   }
   function createTargetRoot(targetName) {
     return h(HTMLDivElement, {
@@ -620,20 +830,49 @@ ${variant}`;
       attrs: { "data-target": targetName }
     });
   }
-  var initMutable = (getNow, targetRoot) => (dispatch, resolvePromise) => {
-    const removeListeners = [
-      addEventListener(window, "focus", (event) => {
-        if (event instanceof CustomEvent && event.detail !== TARGET_NAME) {
-          return;
-        }
-        dispatch({ tag: "FocusedTab" });
-      }),
-      addEventListener(window, "visibilitychange", () => {
-        if (document.visibilityState === "visible") {
-          dispatch({ tag: "PageVisibilityChangedToVisible", date: getNow() });
-        }
-      })
-    ];
+  function browserUiPositionToCss(browserUiPosition) {
+    switch (browserUiPosition) {
+      case "TopLeft":
+        return { top: "-1px", bottom: "auto", left: "-1px", right: "auto" };
+      case "TopRight":
+        return { top: "-1px", bottom: "auto", left: "auto", right: "-1px" };
+      case "BottomLeft":
+        return { top: "auto", bottom: "-1px", left: "-1px", right: "auto" };
+      case "BottomRight":
+        return { top: "auto", bottom: "-1px", left: "auto", right: "-1px" };
+    }
+  }
+  function browserUiPositionToCssForChooser(browserUiPosition) {
+    switch (browserUiPosition) {
+      case "TopLeft":
+        return { top: "auto", bottom: "0", left: "auto", right: "0" };
+      case "TopRight":
+        return { top: "auto", bottom: "0", left: "0", right: "auto" };
+      case "BottomLeft":
+        return { top: "0", bottom: "auto", left: "auto", right: "0" };
+      case "BottomRight":
+        return { top: "0", bottom: "auto", left: "0", right: "auto" };
+    }
+  }
+  function setBrowserUiPosition(browserUiPosition, elements) {
+    const isFirstTargetRoot = elements.targetRoot.previousElementSibling === null;
+    if (!isFirstTargetRoot) {
+      return;
+    }
+    elements.container.dataset.position = browserUiPosition;
+    for (const [key, value] of Object.entries(
+      browserUiPositionToCss(browserUiPosition)
+    )) {
+      elements.container.style.setProperty(key, value);
+    }
+    const isInBottomHalf = browserUiPosition === "BottomLeft" || browserUiPosition === "BottomRight";
+    elements.root.classList.toggle(CLASS.rootBottomHalf, isInBottomHalf);
+    elements.shadowRoot.dispatchEvent(
+      new CustomEvent(BROWSER_UI_MOVED_EVENT, { detail: browserUiPosition })
+    );
+  }
+  var initMutable = (getNow, elements) => (dispatch, resolvePromise) => {
+    let removeListeners = [];
     const mutable = {
       removeListeners: () => {
         for (const removeListener of removeListeners) {
@@ -647,16 +886,66 @@ ${variant}`;
       ),
       webSocketTimeoutId: void 0
     };
-    window.__ELM_WATCH_RELOAD_STATUSES[TARGET_NAME] = {
+    mutable.webSocket.addEventListener(
+      "open",
+      () => {
+        removeListeners = [
+          addEventListener(window, "focus", (event) => {
+            if (event instanceof CustomEvent && event.detail !== TARGET_NAME) {
+              return;
+            }
+            dispatch({ tag: "FocusedTab" });
+          }),
+          addEventListener(window, "visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+              dispatch({
+                tag: "PageVisibilityChangedToVisible",
+                date: getNow()
+              });
+            }
+          }),
+          ...elements === void 0 ? [] : [
+            addEventListener(
+              elements.shadowRoot,
+              BROWSER_UI_MOVED_EVENT,
+              (event) => {
+                dispatch({
+                  tag: "BrowserUiMoved",
+                  browserUiPosition: fields(
+                    (field) => field("detail", parseBrowseUiPositionWithFallback)
+                  )(event)
+                });
+              }
+            ),
+            addEventListener(
+              elements.shadowRoot,
+              CLOSE_ALL_ERROR_OVERLAYS_EVENT,
+              () => {
+                dispatch({
+                  tag: "UiMsg",
+                  date: getNow(),
+                  msg: {
+                    tag: "ChangedOpenErrorOverlay",
+                    openErrorOverlay: false
+                  }
+                });
+              }
+            )
+          ]
+        ];
+      },
+      { once: true }
+    );
+    __ELM_WATCH.RELOAD_STATUSES[TARGET_NAME] = {
       tag: "MightWantToReload"
     };
-    const originalOnInit = window.__ELM_WATCH_ON_INIT;
-    window.__ELM_WATCH_ON_INIT = () => {
+    const originalOnInit = __ELM_WATCH.ON_INIT;
+    __ELM_WATCH.ON_INIT = () => {
       dispatch({ tag: "AppInit" });
       originalOnInit();
     };
-    const originalKillMatching = window.__ELM_WATCH_KILL_MATCHING;
-    window.__ELM_WATCH_KILL_MATCHING = (targetName) => new Promise((resolve, reject) => {
+    const originalKillMatching = __ELM_WATCH.KILL_MATCHING;
+    __ELM_WATCH.KILL_MATCHING = (targetName) => new Promise((resolve, reject) => {
       if (targetName.test(TARGET_NAME) && mutable.webSocket.readyState !== WebSocket.CLOSED) {
         mutable.webSocket.addEventListener("close", () => {
           originalKillMatching(targetName).then(resolve).catch(reject);
@@ -667,14 +956,14 @@ ${variant}`;
           clearTimeout(mutable.webSocketTimeoutId);
           mutable.webSocketTimeoutId = void 0;
         }
-        targetRoot.remove();
+        elements?.targetRoot.remove();
         resolvePromise(void 0);
       } else {
         originalKillMatching(targetName).then(resolve).catch(reject);
       }
     });
-    const originalDisconnect = window.__ELM_WATCH_DISCONNECT;
-    window.__ELM_WATCH_DISCONNECT = (targetName) => {
+    const originalDisconnect = __ELM_WATCH.DISCONNECT;
+    __ELM_WATCH.DISCONNECT = (targetName) => {
       if (targetName.test(TARGET_NAME) && mutable.webSocket.readyState !== WebSocket.CLOSED) {
         mutable.webSocket.close();
       } else {
@@ -691,7 +980,8 @@ ${variant}`;
   }
   function initWebSocket(getNow, elmCompiledTimestamp, dispatch) {
     const hostname = window.location.hostname === "" ? "localhost" : window.location.hostname;
-    const url = new URL(`ws://${hostname}:${WEBSOCKET_PORT}/`);
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const url = new URL(`${protocol}://${hostname}:${WEBSOCKET_PORT}/elm-watch`);
     url.searchParams.set("elmWatchVersion", VERSION);
     url.searchParams.set("targetName", TARGET_NAME);
     url.searchParams.set("elmCompiledTimestamp", elmCompiledTimestamp.toString());
@@ -714,13 +1004,15 @@ ${variant}`;
     });
     return webSocket;
   }
-  var init = (date) => {
-    const status = { tag: "Connecting", date, attemptNumber: 1 };
+  var init = (date, browserUiPosition, elmCompiledTimestampBeforeReload) => {
     const model = {
-      status,
-      previousStatusTag: status.tag,
+      status: { tag: "Connecting", date, attemptNumber: 1 },
+      previousStatusTag: "Idle",
       compilationMode: ORIGINAL_COMPILATION_MODE,
+      browserUiPosition,
+      lastBrowserUiPositionChangeDate: void 0,
       elmCompiledTimestamp: INITIAL_ELM_COMPILED_TIMESTAMP,
+      elmCompiledTimestampBeforeReload,
       uiExpanded: false
     };
     return [model, [{ tag: "Render", model, manageFocus: false }]];
@@ -729,6 +1021,8 @@ ${variant}`;
     switch (msg.tag) {
       case "AppInit":
         return [{ ...model }, []];
+      case "BrowserUiMoved":
+        return [{ ...model, browserUiPosition: msg.browserUiPosition }, []];
       case "EvalErrored":
         return [
           {
@@ -751,8 +1045,7 @@ ${variant}`;
               tag: "WaitingForReload",
               date: msg.date,
               reasons: msg.reasons
-            },
-            uiExpanded: true
+            }
           },
           []
         ];
@@ -776,16 +1069,16 @@ ${variant}`;
       case "FocusedTab":
         return [
           statusToStatusType(model.status.tag) === "Error" ? { ...model } : model,
-          model.status.tag === "Idle" ? [
+          [
             {
               tag: "SendMessage",
               message: { tag: "FocusedTab" },
-              sendKey: model.status.sendKey
+              sendKey: SEND_KEY_DO_NOT_USE_ALL_THE_TIME
             },
             {
               tag: "WebSocketTimeoutBegin"
             }
-          ] : []
+          ]
         ];
       case "PageVisibilityChangedToVisible":
         return reconnect(model, msg.date, { force: true });
@@ -808,7 +1101,13 @@ ${variant}`;
         ];
       }
       case "WebSocketConnected":
-        return [{ ...model, status: { tag: "Busy", date: msg.date } }, []];
+        return [
+          {
+            ...model,
+            status: { tag: "Busy", date: msg.date, errorOverlay: void 0 }
+          },
+          []
+        ];
       case "WebSocketMessageReceived": {
         const result = parseWebSocketMessageData(msg.data);
         switch (result.tag) {
@@ -833,11 +1132,33 @@ ${variant}`;
   }
   function onUiMsg(date, msg, model) {
     switch (msg.tag) {
+      case "ChangedBrowserUiPosition":
+        return [
+          {
+            ...model,
+            browserUiPosition: msg.browserUiPosition,
+            lastBrowserUiPositionChangeDate: date
+          },
+          [
+            {
+              tag: "SendMessage",
+              message: {
+                tag: "ChangedBrowserUiPosition",
+                browserUiPosition: msg.browserUiPosition
+              },
+              sendKey: msg.sendKey
+            }
+          ]
+        ];
       case "ChangedCompilationMode":
         return [
           {
             ...model,
-            status: { tag: "Busy", date },
+            status: {
+              tag: "Busy",
+              date,
+              errorOverlay: getErrorOverlay(model.status)
+            },
             compilationMode: msg.compilationMode
           },
           [
@@ -851,8 +1172,48 @@ ${variant}`;
             }
           ]
         ];
+      case "ChangedOpenErrorOverlay":
+        return "errorOverlay" in model.status && model.status.errorOverlay !== void 0 ? [
+          {
+            ...model,
+            status: {
+              ...model.status,
+              errorOverlay: {
+                ...model.status.errorOverlay,
+                openErrorOverlay: msg.openErrorOverlay
+              }
+            },
+            uiExpanded: false
+          },
+          [
+            {
+              tag: "SendMessage",
+              message: {
+                tag: "ChangedOpenErrorOverlay",
+                openErrorOverlay: msg.openErrorOverlay
+              },
+              sendKey: model.status.tag === "Busy" ? SEND_KEY_DO_NOT_USE_ALL_THE_TIME : model.status.sendKey
+            }
+          ]
+        ] : [model, []];
       case "PressedChevron":
         return [{ ...model, uiExpanded: !model.uiExpanded }, []];
+      case "PressedOpenEditor":
+        return [
+          model,
+          [
+            {
+              tag: "SendMessage",
+              message: {
+                tag: "PressedOpenEditor",
+                file: msg.file,
+                line: msg.line,
+                column: msg.column
+              },
+              sendKey: msg.sendKey
+            }
+          ]
+        ];
       case "PressedReconnectNow":
         return reconnect(model, date, { force: true });
     }
@@ -861,9 +1222,24 @@ ${variant}`;
     switch (msg.tag) {
       case "FocusedTabAcknowledged":
         return [model, [{ tag: "WebSocketTimeoutClear" }]];
+      case "OpenEditorFailed":
+        return [
+          model.status.tag === "CompileError" ? {
+            ...model,
+            status: { ...model.status, openEditorError: msg.error },
+            uiExpanded: true
+          } : model,
+          [
+            {
+              tag: "TriggerReachedIdleState",
+              reason: "OpenEditorFailed"
+            }
+          ]
+        ];
       case "StatusChanged":
         return statusChanged(date, msg, model);
-      case "SuccessfullyCompiled":
+      case "SuccessfullyCompiled": {
+        const justChangedBrowserUiPosition = model.lastBrowserUiPositionChangeDate !== void 0 && date.getTime() - model.lastBrowserUiPositionChangeDate.getTime() < JUST_CHANGED_BROWSER_UI_POSITION_TIMEOUT;
         return msg.compilationMode !== ORIGINAL_COMPILATION_MODE ? [
           {
             ...model,
@@ -881,10 +1257,19 @@ ${variant}`;
           {
             ...model,
             compilationMode: msg.compilationMode,
-            elmCompiledTimestamp: msg.elmCompiledTimestamp
+            elmCompiledTimestamp: msg.elmCompiledTimestamp,
+            browserUiPosition: msg.browserUiPosition,
+            lastBrowserUiPositionChangeDate: void 0
           },
-          [{ tag: "Eval", code: msg.code }]
+          [
+            { tag: "Eval", code: msg.code },
+            justChangedBrowserUiPosition ? {
+              tag: "SetBrowserUiPosition",
+              browserUiPosition: msg.browserUiPosition
+            } : { tag: "NoCmd" }
+          ]
         ];
+      }
       case "SuccessfullyCompiledButRecordFieldsChanged":
         return [
           {
@@ -912,7 +1297,8 @@ ${variant}`;
               date,
               sendKey: SEND_KEY_DO_NOT_USE_ALL_THE_TIME
             },
-            compilationMode: status.compilationMode
+            compilationMode: status.compilationMode,
+            browserUiPosition: status.browserUiPosition
           },
           [
             {
@@ -927,9 +1313,11 @@ ${variant}`;
             ...model,
             status: {
               tag: "Busy",
-              date
+              date,
+              errorOverlay: getErrorOverlay(model.status)
             },
-            compilationMode: status.compilationMode
+            compilationMode: status.compilationMode,
+            browserUiPosition: status.browserUiPosition
           },
           []
         ];
@@ -954,14 +1342,45 @@ ${variant}`;
             status: {
               tag: "CompileError",
               date,
-              sendKey: SEND_KEY_DO_NOT_USE_ALL_THE_TIME
+              sendKey: SEND_KEY_DO_NOT_USE_ALL_THE_TIME,
+              errorOverlay: {
+                errors: new Map(
+                  status.errors.map((error) => {
+                    const overlayError = {
+                      title: error.title,
+                      location: error.location,
+                      htmlContent: error.htmlContent,
+                      foregroundColor: status.foregroundColor,
+                      backgroundColor: status.backgroundColor
+                    };
+                    const id = JSON.stringify(overlayError);
+                    return [id, overlayError];
+                  })
+                ),
+                openErrorOverlay: status.openErrorOverlay
+              },
+              openEditorError: void 0
             },
-            compilationMode: status.compilationMode
+            compilationMode: status.compilationMode,
+            browserUiPosition: status.browserUiPosition
           },
           [
             {
               tag: "TriggerReachedIdleState",
               reason: "CompileError"
+            }
+          ]
+        ];
+      case "ElmJsonError":
+        return [
+          {
+            ...model,
+            status: { tag: "ElmJsonError", date, error: status.error }
+          },
+          [
+            {
+              tag: "TriggerReachedIdleState",
+              reason: "ElmJsonError"
             }
           ]
         ];
@@ -991,11 +1410,11 @@ ${variant}`;
   function printRetryWaitMs(attemptNumber) {
     return `${retryWaitMs(attemptNumber) / 1e3} seconds`;
   }
-  var runCmd = (getNow, targetRoot) => (cmd, mutable, dispatch, _resolvePromise, rejectPromise) => {
+  var runCmd = (getNow, elements) => (cmd, mutable, dispatch, _resolvePromise, rejectPromise) => {
     switch (cmd.tag) {
       case "Eval": {
-        const f = new Function(cmd.code);
         try {
+          const f = new Function(cmd.code);
           f();
           dispatch({ tag: "EvalSucceeded", date: getNow() });
         } catch (unknownError) {
@@ -1012,6 +1431,8 @@ ${variant}`;
         }
         return;
       }
+      case "NoCmd":
+        return;
       case "Reconnect":
         mutable.webSocket = initWebSocket(
           getNow,
@@ -1019,39 +1440,83 @@ ${variant}`;
           dispatch
         );
         return;
-      case "Render":
-        render(
-          getNow,
-          targetRoot,
-          dispatch,
-          cmd.model,
-          {
-            version: VERSION,
-            webSocketUrl: mutable.webSocket.url,
-            targetName: TARGET_NAME,
-            originalCompilationMode: ORIGINAL_COMPILATION_MODE,
-            initializedElmAppsStatus: checkInitializedElmAppsStatus()
-          },
-          cmd.manageFocus
-        );
+      case "Render": {
+        const { model } = cmd;
+        const info = {
+          version: VERSION,
+          webSocketUrl: new URL(mutable.webSocket.url),
+          targetName: TARGET_NAME,
+          originalCompilationMode: ORIGINAL_COMPILATION_MODE,
+          initializedElmAppsStatus: checkInitializedElmAppsStatus(),
+          errorOverlayVisible: elements !== void 0 && !elements.overlay.hidden
+        };
+        if (elements === void 0) {
+          if (model.status.tag !== model.previousStatusTag) {
+            const isError = statusToStatusType(model.status.tag) === "Error";
+            const consoleMethod = isError ? console.error : console.info;
+            consoleMethod(renderWebWorker(model, info));
+          }
+        } else {
+          const { targetRoot } = elements;
+          render(getNow, targetRoot, dispatch, model, info, cmd.manageFocus);
+        }
         return;
-      case "SendMessage":
-        mutable.webSocket.send(JSON.stringify(cmd.message));
+      }
+      case "SendMessage": {
+        const json = JSON.stringify(cmd.message);
+        try {
+          mutable.webSocket.send(json);
+        } catch (error) {
+          console.error("elm-watch: Failed to send WebSocket message:", error);
+        }
+        return;
+      }
+      case "SetBrowserUiPosition":
+        if (elements !== void 0) {
+          setBrowserUiPosition(cmd.browserUiPosition, elements);
+        }
         return;
       case "SleepBeforeReconnect":
         setTimeout(() => {
-          if (document.visibilityState === "visible") {
+          if (typeof document === "undefined" || document.visibilityState === "visible") {
             dispatch({ tag: "SleepBeforeReconnectDone", date: getNow() });
           }
         }, retryWaitMs(cmd.attemptNumber));
         return;
       case "TriggerReachedIdleState":
         Promise.resolve().then(() => {
-          window.__ELM_WATCH_ON_REACHED_IDLE_STATE(cmd.reason);
+          __ELM_WATCH.ON_REACHED_IDLE_STATE(cmd.reason);
         }).catch(rejectPromise);
         return;
+      case "UpdateErrorOverlay":
+        if (elements !== void 0) {
+          updateErrorOverlay(
+            TARGET_NAME,
+            (msg) => {
+              dispatch({ tag: "UiMsg", date: getNow(), msg });
+            },
+            cmd.sendKey,
+            cmd.errors,
+            elements.overlay,
+            elements.overlayCloseButton
+          );
+        }
+        return;
       case "UpdateGlobalStatus":
-        window.__ELM_WATCH_RELOAD_STATUSES[TARGET_NAME] = cmd.reloadStatus;
+        __ELM_WATCH.RELOAD_STATUSES[TARGET_NAME] = cmd.reloadStatus;
+        switch (cmd.reloadStatus.tag) {
+          case "NoReloadWanted":
+          case "MightWantToReload":
+            break;
+          case "ReloadRequested":
+            try {
+              window.sessionStorage.setItem(
+                RELOAD_TARGET_NAME_KEY_PREFIX + TARGET_NAME,
+                cmd.elmCompiledTimestamp.toString()
+              );
+            } catch {
+            }
+        }
         reloadPageIfNeeded();
         return;
       case "WebSocketTimeoutBegin":
@@ -1063,7 +1528,7 @@ ${variant}`;
               tag: "WebSocketClosed",
               date: getNow()
             });
-          }, window.__ELM_WATCH_WEBSOCKET_TIMEOUT);
+          }, __ELM_WATCH.WEBSOCKET_TIMEOUT);
         }
         return;
       case "WebSocketTimeoutClear":
@@ -1130,6 +1595,9 @@ ${possiblyDecodeErrorToString(
         }
       };
     }
+    if (window.Elm === void 0) {
+      return { tag: "MissingWindowElm" };
+    }
     let programTypes;
     try {
       programTypes = ProgramTypes(window);
@@ -1166,7 +1634,7 @@ ${possiblyDecodeErrorToString(
     let shouldReload = false;
     const reasons = [];
     for (const [targetName, reloadStatus] of Object.entries(
-      window.__ELM_WATCH_RELOAD_STATUSES
+      __ELM_WATCH.RELOAD_STATUSES
     )) {
       switch (reloadStatus.tag) {
         case "MightWantToReload":
@@ -1196,11 +1664,12 @@ ${possiblyDecodeErrorToString(
       ).join("\n\n")
     ];
     const message = reasons.length === 0 ? void 0 : `elm-watch: I did a full page reload because${separator}${reasonString}`;
-    window.__ELM_WATCH_RELOAD_STATUSES = {};
-    window.__ELM_WATCH_RELOAD_PAGE(message);
+    __ELM_WATCH.RELOAD_STATUSES = {};
+    __ELM_WATCH.RELOAD_PAGE(message);
   }
   function h(t, {
     attrs,
+    style,
     localName,
     ...props
   }, ...children) {
@@ -1213,6 +1682,11 @@ ${possiblyDecodeErrorToString(
         element.setAttribute(key, value);
       }
     }
+    if (style !== void 0) {
+      for (const [key, value] of Object.entries(style)) {
+        element.style[key] = value;
+      }
+    }
     for (const child of children) {
       if (child !== void 0) {
         element.append(
@@ -1222,11 +1696,13 @@ ${possiblyDecodeErrorToString(
     }
     return element;
   }
+  function renderWebWorker(model, info) {
+    const statusData = statusIconAndText(model, info);
+    return `${statusData.icon} elm-watch: ${statusData.status} ${formatTime(
+      model.status.date
+    )} (${info.targetName})`;
+  }
   function render(getNow, targetRoot, dispatch, model, info, manageFocus) {
-    targetRoot.classList.toggle(
-      CLASS.targetRootBottomHalf,
-      getIsPositionedInBottomHalf(targetRoot)
-    );
     targetRoot.replaceChildren(
       view(
         (msg) => {
@@ -1241,49 +1717,48 @@ ${possiblyDecodeErrorToString(
     if (manageFocus && firstFocusableElement instanceof HTMLElement) {
       firstFocusableElement.focus();
     }
-    window.__ELM_WATCH_ON_RENDER(TARGET_NAME);
-  }
-  function getIsPositionedInBottomHalf(targetRoot) {
-    const { top, height } = targetRoot.getBoundingClientRect();
-    return top + height / 2 > window.innerHeight / 2;
+    __ELM_WATCH.ON_RENDER(TARGET_NAME);
   }
   var CLASS = {
+    browserUiPositionButton: "browserUiPositionButton",
+    browserUiPositionChooser: "browserUiPositionChooser",
     chevronButton: "chevronButton",
     compilationModeWithIcon: "compilationModeWithIcon",
     container: "container",
     debugModeIcon: "debugModeIcon",
+    envNotSet: "envNotSet",
+    errorLocationButton: "errorLocationButton",
+    errorTitle: "errorTitle",
     expandedUiContainer: "expandedUiContainer",
     flashError: "flashError",
     flashSuccess: "flashSuccess",
+    overlay: "overlay",
+    overlayCloseButton: "overlayCloseButton",
     root: "root",
+    rootBottomHalf: "rootBottomHalf",
     shortStatusContainer: "shortStatusContainer",
     targetName: "targetName",
-    targetRoot: "targetRoot",
-    targetRootBottomHalf: "targetRootBottomHalf"
+    targetRoot: "targetRoot"
   };
   function getStatusClass({
     statusType,
     statusTypeChanged,
     hasReceivedHotReload,
-    uiRelatedUpdate
+    uiRelatedUpdate,
+    errorOverlayVisible
   }) {
     switch (statusType) {
       case "Success":
         return statusTypeChanged && hasReceivedHotReload ? CLASS.flashSuccess : void 0;
       case "Error":
-        return uiRelatedUpdate ? void 0 : CLASS.flashError;
+        return errorOverlayVisible ? statusTypeChanged && hasReceivedHotReload ? CLASS.flashError : void 0 : uiRelatedUpdate ? void 0 : CLASS.flashError;
       case "Waiting":
         return void 0;
     }
   }
+  var CHEVRON_UP = "\u25B2";
+  var CHEVRON_DOWN = "\u25BC";
   var CSS = `
-pre {
-  margin: 0;
-  white-space: pre-wrap;
-  border-left: 0.25em solid var(--grey);
-  padding-left: 0.5em;
-}
-
 input,
 button,
 select,
@@ -1293,6 +1768,7 @@ textarea {
   font-weight: inherit;
   letter-spacing: inherit;
   line-height: inherit;
+  color: inherit;
   margin: 0;
 }
 
@@ -1337,6 +1813,115 @@ time::after {
   height: 0;
 }
 
+.${CLASS.overlay} {
+  position: fixed;
+  z-index: -2;
+  inset: 0;
+  overflow-y: auto;
+  padding: 2ch 0;
+}
+
+.${CLASS.overlayCloseButton} {
+  position: fixed;
+  z-index: -1;
+  top: 0;
+  right: 0;
+  appearance: none;
+  padding: 1em;
+  border: none;
+  border-radius: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 1.25em;
+  filter: drop-shadow(0 0 0.125em var(--backgroundColor));
+}
+
+.${CLASS.overlayCloseButton}::before,
+.${CLASS.overlayCloseButton}::after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.125em;
+  height: 1em;
+  background-color: var(--foregroundColor);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.${CLASS.overlayCloseButton}::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.${CLASS.overlay},
+.${CLASS.overlay} pre {
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+}
+
+.${CLASS.overlay} details {
+  --border-thickness: 0.125em;
+  border-top: var(--border-thickness) solid;
+  margin: 2ch 0;
+}
+
+.${CLASS.overlay} summary {
+  cursor: pointer;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0 2ch;
+  word-break: break-word;
+}
+
+.${CLASS.overlay} summary::-webkit-details-marker {
+  display: none;
+}
+
+.${CLASS.overlay} summary::marker {
+  content: none;
+}
+
+.${CLASS.overlay} summary > * {
+  pointer-events: auto;
+}
+
+.${CLASS.errorTitle} {
+  display: inline-block;
+  font-weight: bold;
+  --padding: 1ch;
+  padding: 0 var(--padding);
+  transform: translate(calc(var(--padding) * -1), calc(-50% - var(--border-thickness) / 2));
+}
+
+.${CLASS.errorTitle}::before {
+  content: "${CHEVRON_DOWN}";
+  display: inline-block;
+  margin-right: 1ch;
+  transform: translateY(-0.0625em);
+}
+
+details[open] > summary > .${CLASS.errorTitle}::before {
+  content: "${CHEVRON_UP}";
+}
+
+.${CLASS.errorLocationButton} {
+  appearance: none;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.${CLASS.overlay} pre {
+  margin: 0;
+  padding: 2ch;
+  overflow-x: auto;
+}
+
 .${CLASS.root} {
   --grey: #767676;
   display: flex;
@@ -1348,8 +1933,8 @@ time::after {
   font-family: system-ui;
 }
 
-.${CLASS.targetRootBottomHalf} {
-  align-self: end;
+.${CLASS.rootBottomHalf} {
+  align-items: end;
 }
 
 .${CLASS.targetRoot} + .${CLASS.targetRoot} {
@@ -1368,15 +1953,38 @@ time::after {
   border: 1px solid var(--grey);
 }
 
-.${CLASS.targetRootBottomHalf} .${CLASS.container} {
+.${CLASS.rootBottomHalf} .${CLASS.container} {
   flex-direction: column;
 }
 
+.${CLASS.envNotSet} {
+  display: grid;
+  gap: 0.75em;
+  margin: 2em 0;
+}
+
+.${CLASS.envNotSet},
+.${CLASS.root} pre {
+  border-left: 0.25em solid var(--grey);
+  padding-left: 0.5em;
+}
+
+.${CLASS.root} pre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
 .${CLASS.expandedUiContainer} {
-  padding: 0.75em 1em;
+  padding: 1em;
+  padding-top: 0.75em;
   display: grid;
   gap: 0.75em;
   outline: none;
+  contain: paint;
+}
+
+.${CLASS.rootBottomHalf} .${CLASS.expandedUiContainer} {
+  padding-bottom: 0.75em;
 }
 
 .${CLASS.expandedUiContainer}:is(.length0, .length1) {
@@ -1406,6 +2014,34 @@ time::after {
   display: flex;
   align-items: center;
   gap: 0.25em;
+}
+
+.${CLASS.browserUiPositionChooser} {
+  position: absolute;
+  display: grid;
+  grid-template-columns: min-content min-content;
+  pointer-events: none;
+}
+
+.${CLASS.browserUiPositionButton} {
+  appearance: none;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: none;
+  pointer-events: auto;
+  width: 1em;
+  height: 1em;
+  text-align: center;
+  line-height: 1em;
+}
+
+.${CLASS.browserUiPositionButton}:hover {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+.${CLASS.targetRoot}:not(:first-child) .${CLASS.browserUiPositionChooser} {
+  display: none;
 }
 
 .${CLASS.shortStatusContainer} {
@@ -1482,31 +2118,36 @@ time::after {
 }
 `;
   function view(dispatch, passedModel, info, manageFocus) {
-    const model = window.__ELM_WATCH_MOCKED_TIMINGS ? {
+    const model = __ELM_WATCH.MOCKED_TIMINGS ? {
       ...passedModel,
       status: {
         ...passedModel.status,
         date: new Date("2022-02-05T13:10:05Z")
       }
     } : passedModel;
-    const statusData = viewStatus(
-      dispatch,
-      model.status,
-      model.compilationMode,
-      info
-    );
+    const statusData = {
+      ...statusIconAndText(model, info),
+      ...viewStatus(dispatch, model, info)
+    };
     const statusType = statusToStatusType(model.status.tag);
     const statusTypeChanged = statusType !== statusToStatusType(model.previousStatusTag);
     const statusClass = getStatusClass({
       statusType,
       statusTypeChanged,
       hasReceivedHotReload: model.elmCompiledTimestamp !== INITIAL_ELM_COMPILED_TIMESTAMP,
-      uiRelatedUpdate: manageFocus
+      uiRelatedUpdate: manageFocus,
+      errorOverlayVisible: info.errorOverlayVisible
     });
     return h(
       HTMLDivElement,
       { className: CLASS.container },
-      model.uiExpanded ? viewExpandedUi(model.status, statusData, info) : void 0,
+      model.uiExpanded ? viewExpandedUi(
+        model.status,
+        statusData,
+        info,
+        model.browserUiPosition,
+        dispatch
+      ) : void 0,
       h(
         HTMLDivElement,
         {
@@ -1522,7 +2163,7 @@ time::after {
             attrs: { "aria-expanded": model.uiExpanded.toString() }
           },
           icon(
-            model.uiExpanded ? "\u25B2" : "\u25BC",
+            model.uiExpanded ? CHEVRON_UP : CHEVRON_DOWN,
             model.uiExpanded ? "Collapse elm-watch" : "Expand elm-watch"
           )
         ),
@@ -1555,11 +2196,11 @@ time::after {
       h(HTMLSpanElement, { attrs: { "aria-hidden": "true" } }, emoji)
     );
   }
-  function viewExpandedUi(status, statusData, info) {
+  function viewExpandedUi(status, statusData, info, browserUiPosition, dispatch) {
     const items = [
       ["target", info.targetName],
       ["elm-watch", info.version],
-      ["web socket", new URL(info.webSocketUrl).origin],
+      ["web socket", printWebSocketUrl(info.webSocketUrl)],
       [
         "updated",
         h(
@@ -1574,6 +2215,7 @@ time::after {
       ["status", statusData.status],
       ...statusData.dl
     ];
+    const browserUiPositionSendKey = statusToSpecialCaseSendKey(status);
     return h(
       HTMLDivElement,
       {
@@ -1590,28 +2232,159 @@ time::after {
           h(HTMLElement, { localName: "dd" }, value)
         ])
       ),
-      ...statusData.content
+      ...statusData.content,
+      browserUiPositionSendKey === void 0 ? void 0 : viewBrowserUiPositionChooser(
+        browserUiPosition,
+        dispatch,
+        browserUiPositionSendKey
+      )
     );
   }
-  function viewStatus(dispatch, status, compilationMode, info) {
-    switch (status.tag) {
+  var allBrowserUiPositionsInOrder = [
+    "TopLeft",
+    "TopRight",
+    "BottomLeft",
+    "BottomRight"
+  ];
+  function viewBrowserUiPositionChooser(currentPosition, dispatch, sendKey) {
+    const arrows = getBrowserUiPositionArrows(currentPosition);
+    return h(
+      HTMLDivElement,
+      {
+        className: CLASS.browserUiPositionChooser,
+        style: browserUiPositionToCssForChooser(currentPosition)
+      },
+      ...allBrowserUiPositionsInOrder.map((position) => {
+        const arrow = arrows[position];
+        return arrow === void 0 ? h(HTMLDivElement, { style: { visibility: "hidden" } }, "\xB7") : h(
+          HTMLButtonElement,
+          {
+            className: CLASS.browserUiPositionButton,
+            attrs: { "data-position": position },
+            onclick: () => {
+              dispatch({
+                tag: "ChangedBrowserUiPosition",
+                browserUiPosition: position,
+                sendKey
+              });
+            }
+          },
+          arrow
+        );
+      })
+    );
+  }
+  var ARROW_UP = "\u2191";
+  var ARROW_DOWN = "\u2193";
+  var ARROW_LEFT = "\u2190";
+  var ARROW_RIGHT = "\u2192";
+  var ARROW_UP_LEFT = "\u2196";
+  var ARROW_UP_RIGHT = "\u2197";
+  var ARROW_DOWN_LEFT = "\u2199";
+  var ARROW_DOWN_RIGHT = "\u2198";
+  function getBrowserUiPositionArrows(browserUiPosition) {
+    switch (browserUiPosition) {
+      case "TopLeft":
+        return {
+          TopLeft: void 0,
+          TopRight: ARROW_RIGHT,
+          BottomLeft: ARROW_DOWN,
+          BottomRight: ARROW_DOWN_RIGHT
+        };
+      case "TopRight":
+        return {
+          TopLeft: ARROW_LEFT,
+          TopRight: void 0,
+          BottomLeft: ARROW_DOWN_LEFT,
+          BottomRight: ARROW_DOWN
+        };
+      case "BottomLeft":
+        return {
+          TopLeft: ARROW_UP,
+          TopRight: ARROW_UP_RIGHT,
+          BottomLeft: void 0,
+          BottomRight: ARROW_RIGHT
+        };
+      case "BottomRight":
+        return {
+          TopLeft: ARROW_UP_LEFT,
+          TopRight: ARROW_UP,
+          BottomLeft: ARROW_LEFT,
+          BottomRight: void 0
+        };
+    }
+  }
+  function statusIconAndText(model, info) {
+    switch (model.status.tag) {
       case "Busy":
         return {
           icon: "\u23F3",
-          status: "Waiting for compilation",
-          dl: [],
-          content: viewCompilationModeChooser({
-            dispatch,
-            sendKey: void 0,
-            compilationMode,
-            warnAboutCompilationModeMismatch: false,
-            info
-          })
+          status: "Waiting for compilation"
         };
       case "CompileError":
         return {
           icon: "\u{1F6A8}",
-          status: "Compilation error",
+          status: "Compilation error"
+        };
+      case "Connecting":
+        return {
+          icon: "\u{1F50C}",
+          status: "Connecting"
+        };
+      case "ElmJsonError":
+        return {
+          icon: "\u{1F6A8}",
+          status: "elm.json or inputs error"
+        };
+      case "EvalError":
+        return {
+          icon: "\u26D4\uFE0F",
+          status: "Eval error"
+        };
+      case "Idle":
+        return {
+          icon: idleIcon(info.initializedElmAppsStatus),
+          status: "Successfully compiled"
+        };
+      case "SleepingBeforeReconnect":
+        return {
+          icon: "\u{1F50C}",
+          status: "Sleeping"
+        };
+      case "UnexpectedError":
+        return {
+          icon: "\u274C",
+          status: "Unexpected error"
+        };
+      case "WaitingForReload":
+        return model.elmCompiledTimestamp === model.elmCompiledTimestampBeforeReload ? {
+          icon: "\u274C",
+          status: "Reload trouble"
+        } : {
+          icon: "\u23F3",
+          status: "Waiting for reload"
+        };
+    }
+  }
+  function viewStatus(dispatch, model, info) {
+    const { status, compilationMode } = model;
+    switch (status.tag) {
+      case "Busy":
+        return {
+          dl: [],
+          content: [
+            ...viewCompilationModeChooser({
+              dispatch,
+              sendKey: void 0,
+              compilationMode,
+              warnAboutCompilationModeMismatch: false,
+              info
+            }),
+            ...status.errorOverlay === void 0 ? [] : [viewErrorOverlayToggleButton(dispatch, status.errorOverlay)]
+          ]
+        };
+      case "CompileError":
+        return {
           dl: [],
           content: [
             ...viewCompilationModeChooser({
@@ -1621,33 +2394,30 @@ time::after {
               warnAboutCompilationModeMismatch: true,
               info
             }),
-            h(
-              HTMLParagraphElement,
-              {},
-              h(
-                HTMLElement,
-                { localName: "strong" },
-                "Check the terminal to see errors!"
-              )
-            )
+            viewErrorOverlayToggleButton(dispatch, status.errorOverlay),
+            ...status.openEditorError === void 0 ? [] : viewOpenEditorError(status.openEditorError)
           ]
         };
       case "Connecting":
         return {
-          icon: "\u{1F50C}",
-          status: "Connecting",
           dl: [
             ["attempt", status.attemptNumber.toString()],
             ["sleep", printRetryWaitMs(status.attemptNumber)]
           ],
           content: [
+            ...viewHttpsInfo(info.webSocketUrl),
             h(HTMLButtonElement, { disabled: true }, "Connecting web socket\u2026")
+          ]
+        };
+      case "ElmJsonError":
+        return {
+          dl: [],
+          content: [
+            h(HTMLPreElement, { style: { minWidth: "80ch" } }, status.error)
           ]
         };
       case "EvalError":
         return {
-          icon: "\u26D4\uFE0F",
-          status: "Eval error",
           dl: [],
           content: [
             h(
@@ -1659,8 +2429,6 @@ time::after {
         };
       case "Idle":
         return {
-          icon: idleIcon(info.initializedElmAppsStatus),
-          status: "Successfully compiled",
           dl: [],
           content: viewCompilationModeChooser({
             dispatch,
@@ -1672,13 +2440,12 @@ time::after {
         };
       case "SleepingBeforeReconnect":
         return {
-          icon: "\u{1F50C}",
-          status: "Sleeping",
           dl: [
             ["attempt", status.attemptNumber.toString()],
             ["sleep", printRetryWaitMs(status.attemptNumber)]
           ],
           content: [
+            ...viewHttpsInfo(info.webSocketUrl),
             h(
               HTMLButtonElement,
               {
@@ -1692,8 +2459,6 @@ time::after {
         };
       case "UnexpectedError":
         return {
-          icon: "\u274C",
-          status: "Unexpected error",
           dl: [],
           content: [
             h(
@@ -1706,22 +2471,88 @@ time::after {
         };
       case "WaitingForReload":
         return {
-          icon: "\u23F3",
-          status: "Waiting for reload",
           dl: [],
-          content: [
+          content: model.elmCompiledTimestamp === model.elmCompiledTimestampBeforeReload ? [
+            "A while ago I reloaded the page to get new compiled JavaScript.",
+            "But it looks like after the last page reload I got the same JavaScript as before, instead of new stuff!",
+            `The old JavaScript was compiled ${new Date(
+              model.elmCompiledTimestamp
+            ).toLocaleString()}, and so was the JavaScript currently running.`,
+            "I currently need to reload the page again, but fear a reload loop if I try.",
+            "Do you have accidental HTTP caching enabled maybe?",
+            "Try hard refreshing the page and see if that helps, and consider disabling HTTP caching during development."
+          ].map((text) => h(HTMLParagraphElement, {}, text)) : [h(HTMLParagraphElement, {}, "Waiting for other targets\u2026")]
+        };
+    }
+  }
+  function viewErrorOverlayToggleButton(dispatch, errorOverlay) {
+    return h(
+      HTMLButtonElement,
+      {
+        attrs: {
+          "data-test-id": errorOverlay.openErrorOverlay ? "HideErrorOverlayButton" : "ShowErrorOverlayButton"
+        },
+        onclick: () => {
+          dispatch({
+            tag: "ChangedOpenErrorOverlay",
+            openErrorOverlay: !errorOverlay.openErrorOverlay
+          });
+        }
+      },
+      errorOverlay.openErrorOverlay ? "Hide errors" : "Show errors"
+    );
+  }
+  function viewOpenEditorError(error) {
+    switch (error.tag) {
+      case "EnvNotSet":
+        return [
+          h(
+            HTMLDivElement,
+            { className: CLASS.envNotSet },
             h(
               HTMLParagraphElement,
               {},
-              "Waiting for other targets to finish compiling\u2026"
+              "\u2139\uFE0F Clicking error locations only works if you set it up."
+            ),
+            h(
+              HTMLParagraphElement,
+              {},
+              "Check this out: ",
+              h(
+                HTMLAnchorElement,
+                {
+                  href: "https://lydell.github.io/elm-watch/browser-ui/#clickable-error-locations",
+                  target: "_blank",
+                  rel: "noreferrer"
+                },
+                h(
+                  HTMLElement,
+                  { localName: "strong" },
+                  "Clickable error locations"
+                )
+              )
             )
-          ]
-        };
+          )
+        ];
+      case "CommandFailed":
+        return [
+          h(
+            HTMLParagraphElement,
+            {},
+            h(
+              HTMLElement,
+              { localName: "strong" },
+              "Opening the location in your editor failed!"
+            )
+          ),
+          h(HTMLPreElement, {}, error.message)
+        ];
     }
   }
   function idleIcon(status) {
     switch (status.tag) {
       case "DecodeError":
+      case "MissingWindowElm":
         return "\u274C";
       case "NoProgramsAtAll":
         return "\u2753";
@@ -1740,6 +2571,44 @@ time::after {
       case "optimize":
         return icon("\u{1F680}", "Optimize mode");
     }
+  }
+  function printWebSocketUrl(url) {
+    const hostname = url.hostname.endsWith(".localhost") ? "localhost" : url.hostname;
+    return `${url.protocol}//${hostname}:${url.port}`;
+  }
+  function viewHttpsInfo(webSocketUrl) {
+    return webSocketUrl.protocol === "wss:" ? [
+      h(
+        HTMLParagraphElement,
+        {},
+        h(HTMLElement, { localName: "strong" }, "Having trouble connecting?")
+      ),
+      h(
+        HTMLParagraphElement,
+        {},
+        " You might need to ",
+        h(
+          HTMLAnchorElement,
+          { href: new URL(`https://${webSocketUrl.host}/accept`).href },
+          "accept elm-watch\u2019s self-signed certificate"
+        ),
+        ". "
+      ),
+      h(
+        HTMLParagraphElement,
+        {},
+        h(
+          HTMLAnchorElement,
+          {
+            href: "https://lydell.github.io/elm-watch/https/",
+            target: "_blank",
+            rel: "noreferrer"
+          },
+          "More information"
+        ),
+        "."
+      )
+    ] : [];
   }
   var noDebuggerYetReason = "The Elm debugger isn't available at this point.";
   function noDebuggerReason(noDebuggerProgramTypes) {
@@ -1768,6 +2637,24 @@ time::after {
             "window.Elm does not look like expected! This is the error message:"
           ),
           h(HTMLPreElement, {}, info.initializedElmAppsStatus.message)
+        ];
+      case "MissingWindowElm":
+        return [
+          h(
+            HTMLParagraphElement,
+            {},
+            "elm-watch requires ",
+            h(
+              HTMLAnchorElement,
+              {
+                href: "https://lydell.github.io/elm-watch/window.Elm/",
+                target: "_blank",
+                rel: "noreferrer"
+              },
+              "window.Elm"
+            ),
+            " to exist, but it is undefined!"
+          )
         ];
       case "NoProgramsAtAll":
         return [
@@ -1833,6 +2720,140 @@ time::after {
         ];
       }
     }
+  }
+  var DATA_TARGET_NAMES = "data-target-names";
+  function updateErrorOverlay(targetName, dispatch, sendKey, errors, overlay, overlayCloseButton) {
+    const existingErrorElements = new Map(
+      Array.from(overlay.children, (element) => [
+        element.id,
+        {
+          targetNames: new Set(
+            (element.getAttribute(DATA_TARGET_NAMES) ?? "").split("\n")
+          ),
+          element
+        }
+      ])
+    );
+    for (const [id, { targetNames, element }] of existingErrorElements) {
+      if (targetNames.has(targetName) && !errors.has(id)) {
+        targetNames.delete(targetName);
+        if (targetNames.size === 0) {
+          element.remove();
+        } else {
+          element.setAttribute(DATA_TARGET_NAMES, [...targetNames].join("\n"));
+        }
+      }
+    }
+    for (const [id, error] of errors) {
+      const maybeExisting = existingErrorElements.get(id);
+      if (maybeExisting === void 0) {
+        const element = viewOverlayError(
+          targetName,
+          dispatch,
+          sendKey,
+          id,
+          error
+        );
+        overlay.appendChild(element);
+        overlay.style.backgroundColor = error.backgroundColor;
+        overlayCloseButton.style.setProperty(
+          "--foregroundColor",
+          error.foregroundColor
+        );
+        overlayCloseButton.style.setProperty(
+          "--backgroundColor",
+          error.backgroundColor
+        );
+      } else if (!maybeExisting.targetNames.has(targetName)) {
+        maybeExisting.element.setAttribute(
+          DATA_TARGET_NAMES,
+          [...maybeExisting.targetNames, targetName].join("\n")
+        );
+      }
+    }
+    const hidden = !overlay.hasChildNodes();
+    overlay.hidden = hidden;
+    overlayCloseButton.hidden = hidden;
+    overlayCloseButton.style.right = `${overlay.offsetWidth - overlay.clientWidth}px`;
+  }
+  function viewOverlayError(targetName, dispatch, sendKey, id, error) {
+    return h(
+      HTMLDetailsElement,
+      {
+        open: true,
+        id,
+        style: {
+          backgroundColor: error.backgroundColor,
+          color: error.foregroundColor
+        },
+        attrs: {
+          [DATA_TARGET_NAMES]: targetName
+        }
+      },
+      h(
+        HTMLElement,
+        { localName: "summary" },
+        h(
+          HTMLSpanElement,
+          {
+            className: CLASS.errorTitle,
+            style: {
+              backgroundColor: error.backgroundColor
+            }
+          },
+          error.title
+        ),
+        error.location === void 0 ? void 0 : h(
+          HTMLParagraphElement,
+          {},
+          viewErrorLocation(dispatch, sendKey, error.location)
+        )
+      ),
+      h(HTMLPreElement, { innerHTML: error.htmlContent })
+    );
+  }
+  function viewErrorLocation(dispatch, sendKey, location) {
+    switch (location.tag) {
+      case "FileOnly":
+        return viewErrorLocationButton(
+          dispatch,
+          sendKey,
+          {
+            file: location.file,
+            line: 1,
+            column: 1
+          },
+          location.file.absolutePath
+        );
+      case "FileWithLineAndColumn": {
+        return viewErrorLocationButton(
+          dispatch,
+          sendKey,
+          location,
+          `${location.file.absolutePath}:${location.line}:${location.column}`
+        );
+      }
+      case "Target":
+        return `Target: ${location.targetName}`;
+    }
+  }
+  function viewErrorLocationButton(dispatch, sendKey, location, text) {
+    return sendKey === void 0 ? text : h(
+      HTMLButtonElement,
+      {
+        className: CLASS.errorLocationButton,
+        onclick: () => {
+          dispatch({
+            tag: "PressedOpenEditor",
+            file: location.file,
+            line: location.line,
+            column: location.column,
+            sendKey
+          });
+        }
+      },
+      text
+    );
   }
   run();
 })();
@@ -3728,7 +4749,7 @@ function _Platform_initialize(programType, debugMetadata, flagDecoder, args, ini
 	$elm$core$Result$isOk(flagResult) || _Debug_crash(2 /**/, _Json_errorToString(flagResult.a) /**/);
 	var managers = {};
 	var initUrl = programType === "Browser.application" ? _Browser_getUrl() : undefined;
-	window.__ELM_WATCH_INIT_URL = initUrl;
+	globalThis.__ELM_WATCH.INIT_URL = initUrl;
 	var initPair = init(flagResult.a);
 	var model = initPair.a;
 	var stepper = stepperBuilder(sendToApp, model);
@@ -3791,7 +4812,7 @@ function _Platform_initialize(programType, debugMetadata, flagDecoder, args, ini
 		if (typeof $elm$browser$Debugger$Main$wrapInit !== "undefined") {
 			init = A3($elm$browser$Debugger$Main$wrapInit, _Json_wrap(newData.debugMetadata), initPair.a.popout, init);
 		}
-		window.__ELM_WATCH_INIT_URL = initUrl;
+		globalThis.__ELM_WATCH.INIT_URL = initUrl;
 		var newInitPair = init(newFlagResult.a);
 		if (!_Utils_eq_elmWatchInternal(initPair, newInitPair)) {
 			return { tag: "ReloadPage", reason: "`" + moduleName + ".init` returned something different than last time. Let's start fresh!" };
@@ -4380,7 +5401,7 @@ function _Platform_mergeExportsElmWatch(moduleName, obj, exports)
 				obj.init = function() {
 					var app = exports.init.apply(exports, arguments);
 					obj.__elmWatchApps.push(app);
-					window.__ELM_WATCH_ON_INIT();
+					globalThis.__ELM_WATCH.ON_INIT();
 					return app;
 				};
 			}
@@ -6165,7 +7186,7 @@ function _Browser_application(impl)
 		init: function(flags)
 		{
 			// return A3(impl.init, flags, _Browser_getUrl(), key); // commented out by elm-watch
-			return A3(impl.init, flags, window.__ELM_WATCH_INIT_URL, key); // added by elm-watch
+			return A3(impl.init, flags, globalThis.__ELM_WATCH.INIT_URL, key); // added by elm-watch
 		},
 		// view: impl.view, // commented out by elm-watch
 		// update: impl.update, // commented out by elm-watch
@@ -9179,6 +10200,7 @@ var $elm$core$Task$perform = F2(
 	});
 var $elm$browser$Browser$element = _Browser_element;
 var $author$project$Main$AccuracyStyle = {$: 'AccuracyStyle'};
+var $author$project$Main$InventoryPanel = {$: 'InventoryPanel'};
 var $author$project$Main$Standing = {$: 'Standing'};
 var $elm$core$Set$Set_elm_builtin = function (a) {
 	return {$: 'Set_elm_builtin', a: a};
@@ -9186,6 +10208,10 @@ var $elm$core$Set$Set_elm_builtin = function (a) {
 var $elm$core$Dict$RBEmpty_elm_builtin = {$: 'RBEmpty_elm_builtin'};
 var $elm$core$Dict$empty = $elm$core$Dict$RBEmpty_elm_builtin;
 var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
+var $author$project$Inventory$Inventory = function (a) {
+	return {$: 'Inventory', a: a};
+};
+var $author$project$Inventory$init = $author$project$Inventory$Inventory(_List_Nil);
 var $author$project$Monster$AliveMonster = function (a) {
 	return {$: 'AliveMonster', a: a};
 };
@@ -9240,13 +10266,16 @@ var $author$project$Main$init = function (_v0) {
 			attackStyle: $author$project$Main$AccuracyStyle,
 			cameraAngle: $ianmackenzie$elm_units$Angle$turns(0),
 			defenseXp: 0,
+			groundItems: _List_Nil,
 			health: 10,
 			hits: _List_Nil,
+			inventory: $author$project$Inventory$init,
 			keysDown: $elm$core$Set$empty,
 			location: A3($ianmackenzie$elm_geometry$Point3d$meters, 0, 0, 0),
 			maxHealth: 10,
 			monsters: $author$project$Monster$init,
 			now: -1,
+			sidePanel: $author$project$Main$InventoryPanel,
 			strengthXp: 0,
 			travelPath: _List_Nil
 		},
@@ -10239,56 +11268,82 @@ var $elm$core$Set$member = F2(
 		var dict = _v0.a;
 		return A2($elm$core$Dict$member, key, dict);
 	});
-var $author$project$Monster$DeadMonster = function (a) {
-	return {$: 'DeadMonster', a: a};
+var $elm$core$Basics$neq = _Utils_notEqual;
+var $author$project$Inventory$Coins = function (a) {
+	return {$: 'Coins', a: a};
 };
-var $elm$core$Basics$ge = _Utils_ge;
-var $author$project$Monster$respawnMonster = F2(
-	function (time, monster) {
-		return (_Utils_cmp(time, monster.respawnAt) > -1) ? $author$project$Monster$AliveMonster(
-			{color: monster.color, health: monster.maxHealth, hits: _List_Nil, id: monster.id, location: monster.respawnLocation, maxHealth: monster.maxHealth, name: monster.name, respawnLocation: monster.respawnLocation, travelPath: _List_Nil}) : $author$project$Monster$DeadMonster(monster);
-	});
-var $elm$core$Basics$clamp = F3(
-	function (low, high, number) {
-		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
-	});
-var $ianmackenzie$elm_geometry$Vector3d$from = F2(
-	function (_v0, _v1) {
-		var p1 = _v0.a;
-		var p2 = _v1.a;
-		return $ianmackenzie$elm_geometry$Geometry$Types$Vector3d(
-			{x: p2.x - p1.x, y: p2.y - p1.y, z: p2.z - p1.z});
-	});
-var $ianmackenzie$elm_geometry$Point3d$origin = $ianmackenzie$elm_geometry$Geometry$Types$Point3d(
-	{x: 0, y: 0, z: 0});
-var $author$project$Monster$shortestPath = F2(
-	function (start, destination) {
-		if (_Utils_eq(start, destination)) {
-			return _List_Nil;
+var $author$project$Inventory$addCoins = F2(
+	function (addAmount, item) {
+		if (item.$ === 'Coins') {
+			var amount = item.a;
+			return $author$project$Inventory$Coins(amount + addAmount);
 		} else {
-			var yDiff = A3(
-				$elm$core$Basics$clamp,
-				-1,
-				1,
-				$ianmackenzie$elm_geometry$Point3d$toMeters(destination).y - $ianmackenzie$elm_geometry$Point3d$toMeters(start).y);
-			var xDiff = A3(
-				$elm$core$Basics$clamp,
-				-1,
-				1,
-				$ianmackenzie$elm_geometry$Point3d$toMeters(destination).x - $ianmackenzie$elm_geometry$Point3d$toMeters(start).x);
-			var newStart = $ianmackenzie$elm_geometry$Point3d$fromMeters(
-				$ianmackenzie$elm_geometry$Vector3d$toMeters(
-					A2(
-						$ianmackenzie$elm_geometry$Vector3d$plus,
-						A2(
-							$ianmackenzie$elm_geometry$Vector3d$from,
-							$ianmackenzie$elm_geometry$Point3d$origin,
-							A3($ianmackenzie$elm_geometry$Point3d$meters, xDiff, yDiff, 0)),
-						A2($ianmackenzie$elm_geometry$Vector3d$from, $ianmackenzie$elm_geometry$Point3d$origin, start))));
-			return A2(
-				$elm$core$List$cons,
-				newStart,
-				A2($author$project$Monster$shortestPath, newStart, destination));
+			return item;
+		}
+	});
+var $elm$core$Basics$ge = _Utils_ge;
+var $author$project$Inventory$maxInventoryItems = 28;
+var $author$project$Inventory$appendItem = F2(
+	function (item, _v0) {
+		var items = _v0.a;
+		return (_Utils_cmp(
+			$elm$core$List$length(items),
+			$author$project$Inventory$maxInventoryItems) > -1) ? $author$project$Inventory$Inventory(items) : $author$project$Inventory$Inventory(
+			_Utils_ap(
+				items,
+				_List_fromArray(
+					[item])));
+	});
+var $elm_community$list_extra$List$Extra$findIndexHelp = F3(
+	function (index, predicate, list) {
+		findIndexHelp:
+		while (true) {
+			if (!list.b) {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (predicate(x)) {
+					return $elm$core$Maybe$Just(index);
+				} else {
+					var $temp$index = index + 1,
+						$temp$predicate = predicate,
+						$temp$list = xs;
+					index = $temp$index;
+					predicate = $temp$predicate;
+					list = $temp$list;
+					continue findIndexHelp;
+				}
+			}
+		}
+	});
+var $elm_community$list_extra$List$Extra$findIndex = $elm_community$list_extra$List$Extra$findIndexHelp(0);
+var $author$project$Inventory$isCoins = function (item) {
+	if (item.$ === 'Coins') {
+		return true;
+	} else {
+		return false;
+	}
+};
+var $elm$core$List$drop = F2(
+	function (n, list) {
+		drop:
+		while (true) {
+			if (n <= 0) {
+				return list;
+			} else {
+				if (!list.b) {
+					return list;
+				} else {
+					var x = list.a;
+					var xs = list.b;
+					var $temp$n = n - 1,
+						$temp$list = xs;
+					n = $temp$n;
+					list = $temp$list;
+					continue drop;
+				}
+			}
 		}
 	});
 var $elm$core$List$takeReverse = F3(
@@ -10417,6 +11472,105 @@ var $elm$core$List$take = F2(
 	function (n, list) {
 		return A3($elm$core$List$takeFast, 0, n, list);
 	});
+var $elm_community$list_extra$List$Extra$updateAt = F3(
+	function (index, fn, list) {
+		if (index < 0) {
+			return list;
+		} else {
+			var tail = A2($elm$core$List$drop, index, list);
+			if (tail.b) {
+				var x = tail.a;
+				var xs = tail.b;
+				return _Utils_ap(
+					A2($elm$core$List$take, index, list),
+					A2(
+						$elm$core$List$cons,
+						fn(x),
+						xs));
+			} else {
+				return list;
+			}
+		}
+	});
+var $author$project$Inventory$pickUpItem = F2(
+	function (groundItem, _v0) {
+		var items = _v0.a;
+		var _v1 = groundItem.item;
+		if (_v1.$ === 'Coins') {
+			var amount = _v1.a;
+			var _v2 = A2($elm_community$list_extra$List$Extra$findIndex, $author$project$Inventory$isCoins, items);
+			if (_v2.$ === 'Nothing') {
+				return A2(
+					$author$project$Inventory$appendItem,
+					groundItem.item,
+					$author$project$Inventory$Inventory(items));
+			} else {
+				var coinsIndex = _v2.a;
+				return $author$project$Inventory$Inventory(
+					A3(
+						$elm_community$list_extra$List$Extra$updateAt,
+						coinsIndex,
+						$author$project$Inventory$addCoins(amount),
+						items));
+			}
+		} else {
+			return A2(
+				$author$project$Inventory$appendItem,
+				groundItem.item,
+				$author$project$Inventory$Inventory(items));
+		}
+	});
+var $author$project$Monster$DeadMonster = function (a) {
+	return {$: 'DeadMonster', a: a};
+};
+var $author$project$Monster$respawnMonster = F2(
+	function (time, monster) {
+		return (_Utils_cmp(time, monster.respawnAt) > -1) ? $author$project$Monster$AliveMonster(
+			{color: monster.color, health: monster.maxHealth, hits: _List_Nil, id: monster.id, location: monster.respawnLocation, maxHealth: monster.maxHealth, name: monster.name, respawnLocation: monster.respawnLocation, travelPath: _List_Nil}) : $author$project$Monster$DeadMonster(monster);
+	});
+var $elm$core$Basics$clamp = F3(
+	function (low, high, number) {
+		return (_Utils_cmp(number, low) < 0) ? low : ((_Utils_cmp(number, high) > 0) ? high : number);
+	});
+var $ianmackenzie$elm_geometry$Vector3d$from = F2(
+	function (_v0, _v1) {
+		var p1 = _v0.a;
+		var p2 = _v1.a;
+		return $ianmackenzie$elm_geometry$Geometry$Types$Vector3d(
+			{x: p2.x - p1.x, y: p2.y - p1.y, z: p2.z - p1.z});
+	});
+var $ianmackenzie$elm_geometry$Point3d$origin = $ianmackenzie$elm_geometry$Geometry$Types$Point3d(
+	{x: 0, y: 0, z: 0});
+var $author$project$Monster$shortestPath = F2(
+	function (start, destination) {
+		if (_Utils_eq(start, destination)) {
+			return _List_Nil;
+		} else {
+			var yDiff = A3(
+				$elm$core$Basics$clamp,
+				-1,
+				1,
+				$ianmackenzie$elm_geometry$Point3d$toMeters(destination).y - $ianmackenzie$elm_geometry$Point3d$toMeters(start).y);
+			var xDiff = A3(
+				$elm$core$Basics$clamp,
+				-1,
+				1,
+				$ianmackenzie$elm_geometry$Point3d$toMeters(destination).x - $ianmackenzie$elm_geometry$Point3d$toMeters(start).x);
+			var newStart = $ianmackenzie$elm_geometry$Point3d$fromMeters(
+				$ianmackenzie$elm_geometry$Vector3d$toMeters(
+					A2(
+						$ianmackenzie$elm_geometry$Vector3d$plus,
+						A2(
+							$ianmackenzie$elm_geometry$Vector3d$from,
+							$ianmackenzie$elm_geometry$Point3d$origin,
+							A3($ianmackenzie$elm_geometry$Point3d$meters, xDiff, yDiff, 0)),
+						A2($ianmackenzie$elm_geometry$Vector3d$from, $ianmackenzie$elm_geometry$Point3d$origin, start))));
+			return A2(
+				$elm$core$List$cons,
+				newStart,
+				A2($author$project$Monster$shortestPath, newStart, destination));
+		}
+	});
 var $ianmackenzie$elm_units$Length$inMeters = function (_v0) {
 	var numMeters = _v0.a;
 	return numMeters;
@@ -10526,9 +11680,9 @@ var $author$project$Main$applyAnimationFrame = F2(
 			function (m) {
 				if (m.$ === 'AliveMonster') {
 					var monster = m.a;
-					var _v4 = A2($author$project$Main$updateLocationTravelPath, monster.location, monster.travelPath);
-					var newMonsterLocation = _v4.a;
-					var newMonsterTravelPath = _v4.b;
+					var _v5 = A2($author$project$Main$updateLocationTravelPath, monster.location, monster.travelPath);
+					var newMonsterLocation = _v5.a;
+					var newMonsterTravelPath = _v5.b;
 					return $author$project$Monster$AliveMonster(
 						_Utils_update(
 							monster,
@@ -10541,9 +11695,9 @@ var $author$project$Main$applyAnimationFrame = F2(
 									monster.hits),
 								location: newMonsterLocation,
 								travelPath: function () {
-									var _v5 = model.appearance;
-									if (_v5.$ === 'Fighting') {
-										var fightingMonster = _v5.a;
+									var _v6 = model.appearance;
+									if (_v6.$ === 'Fighting') {
+										var fightingMonster = _v6.a;
 										return _Utils_eq(monster.id, fightingMonster.id) ? A2($elm$core$List$take, 1, newMonsterTravelPath) : newMonsterTravelPath;
 									} else {
 										return newMonsterTravelPath;
@@ -10587,24 +11741,65 @@ var $author$project$Main$applyAnimationFrame = F2(
 						$author$project$Main$updateLocationTravelPath,
 						model.location,
 						A2($author$project$Monster$shortestPath, model.location, monsterSide));
+				case 'Standing':
+					return A2($author$project$Main$updateLocationTravelPath, model.location, model.travelPath);
 				default:
+					var groundItem = _v1.a;
 					return A2($author$project$Main$updateLocationTravelPath, model.location, model.travelPath);
 			}
 		}();
 		var newLocation = _v0.a;
 		var newTravelPath = _v0.b;
-		var newState = function () {
-			var _v2 = _Utils_Tuple2(newTravelPath, model.appearance);
-			if ((!_v2.a.b) && (_v2.b.$ === 'Attacking')) {
-				var monster = _v2.b.a;
-				return $author$project$Main$Fighting(monster);
-			} else {
-				return model.appearance;
+		var _v2 = function () {
+			var _v3 = _Utils_Tuple2(newTravelPath, model.appearance);
+			_v3$2:
+			while (true) {
+				if (!_v3.a.b) {
+					switch (_v3.b.$) {
+						case 'Attacking':
+							var monster = _v3.b.a;
+							return _Utils_Tuple3(
+								$author$project$Main$Fighting(monster),
+								model.inventory,
+								model.groundItems);
+						case 'PickingUpItem':
+							var groundItem = _v3.b.a;
+							return _Utils_Tuple3(
+								$author$project$Main$Standing,
+								A2($author$project$Inventory$pickUpItem, groundItem, model.inventory),
+								A2(
+									$elm$core$List$filter,
+									$elm$core$Basics$neq(groundItem),
+									model.groundItems));
+						default:
+							break _v3$2;
+					}
+				} else {
+					break _v3$2;
+				}
 			}
+			return _Utils_Tuple3(model.appearance, model.inventory, model.groundItems);
 		}();
+		var newState = _v2.a;
+		var newInventory = _v2.b;
+		var newGroundItems = _v2.c;
 		var newModel = _Utils_update(
 			model,
-			{appearance: newState, hits: newHits, location: newLocation, monsters: newMonsters, now: time, travelPath: newTravelPath});
+			{
+				appearance: newState,
+				groundItems: A2(
+					$elm$core$List$filter,
+					function (item) {
+						return _Utils_cmp(item.disappearsAt, time) > 0;
+					},
+					newGroundItems),
+				hits: newHits,
+				inventory: newInventory,
+				location: newLocation,
+				monsters: newMonsters,
+				now: time,
+				travelPath: newTravelPath
+			});
 		return A2($elm$core$Set$member, 'ArrowLeft', model.keysDown) ? _Utils_update(
 			newModel,
 			{
@@ -10615,6 +11810,7 @@ var $author$project$Main$applyAnimationFrame = F2(
 				cameraAngle: A2(turnAngle, rotationSpeed, model.cameraAngle)
 			}) : newModel);
 	});
+var $author$project$Inventory$BronzeDagger = {$: 'BronzeDagger'};
 var $author$project$Main$DefenseStyle = {$: 'DefenseStyle'};
 var $author$project$Main$StrengthStyle = {$: 'StrengthStyle'};
 var $author$project$Monster$findAliveMonster = F2(
@@ -10632,6 +11828,7 @@ var $author$project$Monster$findAliveMonster = F2(
 				},
 				monsters));
 	});
+var $author$project$Inventory$groundItemDisappearTime = 20000;
 var $author$project$Monster$respawnTime = 20000;
 var $author$project$Monster$killMonster = F2(
 	function (time, monster) {
@@ -10674,6 +11871,24 @@ var $author$project$Main$applyAttackRound = F3(
 							{health: newHealth, hits: newHits}));
 				},
 				model.monsters);
+			var newGroundItems = function () {
+				var _v2 = A2($author$project$Monster$findAliveMonster, fightingMonster.id, newMonsters);
+				if (_v2.$ === 'Nothing') {
+					return (!(model.now % 2)) ? A2(
+						$elm$core$List$cons,
+						{
+							disappearsAt: model.now + $author$project$Inventory$groundItemDisappearTime,
+							item: $author$project$Inventory$Coins(2),
+							location: fightingMonster.location
+						},
+						model.groundItems) : A2(
+						$elm$core$List$cons,
+						{disappearsAt: model.now + $author$project$Inventory$groundItemDisappearTime, item: $author$project$Inventory$BronzeDagger, location: fightingMonster.location},
+						model.groundItems);
+				} else {
+					return model.groundItems;
+				}
+			}();
 			return _Utils_update(
 				model,
 				{
@@ -10688,6 +11903,7 @@ var $author$project$Main$applyAttackRound = F3(
 						}
 					}(),
 					defenseXp: _Utils_eq(model.attackStyle, $author$project$Main$DefenseStyle) ? (model.defenseXp + monsterDamage) : model.defenseXp,
+					groundItems: newGroundItems,
 					health: A2($elm$core$Basics$max, 1, model.health - playerDamage),
 					hits: A2(
 						$elm$core$List$cons,
@@ -10705,6 +11921,9 @@ var $author$project$Main$applyAttackRound = F3(
 	});
 var $author$project$Main$Attacking = function (a) {
 	return {$: 'Attacking', a: a};
+};
+var $author$project$Main$PickingUpItem = function (a) {
+	return {$: 'PickingUpItem', a: a};
 };
 var $ianmackenzie$elm_geometry$Point3d$equalWithin = F3(
 	function (_v0, _v1, _v2) {
@@ -11108,7 +12327,6 @@ var $author$project$Main$mapPoint = F2(
 			}(
 				$ianmackenzie$elm_geometry$Point3d$toMeters(point)));
 	});
-var $elm$core$Basics$neq = _Utils_notEqual;
 var $ianmackenzie$elm_units$Quantity$at = F2(
 	function (_v0, _v1) {
 		var rateOfChange = _v0.a;
@@ -11410,6 +12628,17 @@ var $author$project$Main$applyMouseDown = F2(
 					$elm$core$Maybe$withDefault,
 					model.location,
 					$elm$core$List$head(model.travelPath));
+				var pickingUpItem = $elm$core$List$head(
+					A2(
+						$elm$core$List$filter,
+						function (groundItem) {
+							return A3(
+								$ianmackenzie$elm_geometry$Point3d$equalWithin,
+								$ianmackenzie$elm_units$Length$meters(0.5),
+								destination,
+								groundItem.location);
+						},
+						model.groundItems));
 				var attackingMonster = $elm$core$List$head(
 					A2(
 						$elm$core$List$filter,
@@ -11426,8 +12655,9 @@ var $author$project$Main$applyMouseDown = F2(
 							}
 						},
 						model.monsters));
-				if ((attackingMonster.$ === 'Just') && (attackingMonster.a.$ === 'AliveMonster')) {
-					var monster = attackingMonster.a.a;
+				var _v1 = _Utils_Tuple2(attackingMonster, pickingUpItem);
+				if ((_v1.a.$ === 'Just') && (_v1.a.a.$ === 'AliveMonster')) {
+					var monster = _v1.a.a.a;
 					var monsterSide = A2($author$project$Main$closestSideOf, destination, model.location);
 					var newTravelPath = A2(
 						$elm$core$List$filter,
@@ -11445,21 +12675,31 @@ var $author$project$Main$applyMouseDown = F2(
 							travelPath: newTravelPath
 						});
 				} else {
-					return _Utils_update(
-						model,
-						{
-							appearance: $author$project$Main$Standing,
-							travelPath: function () {
-								var _v2 = A2($author$project$Monster$shortestPath, start, destination);
-								if (!_v2.b) {
-									return _List_fromArray(
-										[destination]);
-								} else {
-									var path = _v2;
-									return path;
-								}
-							}()
-						});
+					if (_v1.b.$ === 'Just') {
+						var groundItem = _v1.b.a;
+						return _Utils_update(
+							model,
+							{
+								appearance: $author$project$Main$PickingUpItem(groundItem),
+								travelPath: A2($author$project$Monster$shortestPath, start, destination)
+							});
+					} else {
+						return _Utils_update(
+							model,
+							{
+								appearance: $author$project$Main$Standing,
+								travelPath: function () {
+									var _v2 = A2($author$project$Monster$shortestPath, start, destination);
+									if (!_v2.b) {
+										return _List_fromArray(
+											[destination]);
+									} else {
+										var path = _v2;
+										return path;
+									}
+								}()
+							});
+					}
 				}
 			}
 		}
@@ -12231,6 +13471,13 @@ var $author$project$Main$update = F2(
 							keysDown: A2($elm$core$Set$remove, key, model.keysDown)
 						}),
 					$elm$core$Platform$Cmd$none);
+			case 'SetSidePanel':
+				var sidePanel = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{sidePanel: sidePanel}),
+					$elm$core$Platform$Cmd$none);
 			case 'GenerateAttackRound':
 				return _Utils_Tuple2(model, $author$project$Main$generateAttackRound);
 			case 'AttackRound':
@@ -12282,7 +13529,18 @@ var $author$project$Main$update = F2(
 					$elm$core$Platform$Cmd$none);
 		}
 	});
+var $elm$json$Json$Encode$string = _Json_wrap;
+var $elm$html$Html$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$string(string));
+	});
+var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
 var $elm$html$Html$div = _VirtualDom_node('div');
+var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
+var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $avh4$elm_color$Color$blue = A4($avh4$elm_color$Color$RgbaSpace, 52 / 255, 101 / 255, 164 / 255, 1.0);
 var $avh4$elm_color$Color$darkBlue = A4($avh4$elm_color$Color$RgbaSpace, 32 / 255, 74 / 255, 135 / 255, 1.0);
 var $avh4$elm_color$Color$darkRed = A4($avh4$elm_color$Color$RgbaSpace, 164 / 255, 0 / 255, 0 / 255, 1.0);
@@ -12290,6 +13548,8 @@ var $author$project$Main$playerColor = function (state) {
 	switch (state.$) {
 		case 'Standing':
 			return $avh4$elm_color$Color$blue;
+		case 'PickingUpItem':
+			return $avh4$elm_color$Color$darkBlue;
 		case 'Attacking':
 			return $avh4$elm_color$Color$darkBlue;
 		default:
@@ -12298,8 +13558,6 @@ var $author$project$Main$playerColor = function (state) {
 };
 var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
-var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
-var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $avh4$elm_color$Color$darkGray = A4($avh4$elm_color$Color$RgbaSpace, 186 / 255, 189 / 255, 182 / 255, 1.0);
 var $avh4$elm_color$Color$darkGreen = A4($avh4$elm_color$Color$RgbaSpace, 78 / 255, 154 / 255, 6 / 255, 1.0);
 var $author$project$GameMap$gameTiles = _List_fromArray(
@@ -14417,81 +15675,41 @@ var $ianmackenzie$elm_3d_scene$Scene3d$unlit = function (_arguments) {
 			whiteBalance: $ianmackenzie$elm_3d_scene$Scene3d$Light$daylight
 		});
 };
-var $author$project$Main$SetAttackStyle = function (a) {
-	return {$: 'SetAttackStyle', a: a};
-};
-var $author$project$Main$redDamage = '#d33030';
-var $author$project$Main$activeAttackStyle = function (isActive) {
-	return isActive ? A2($elm$html$Html$Attributes$style, 'background-color', $author$project$Main$redDamage) : A2($elm$html$Html$Attributes$style, '', '');
-};
-var $elm$html$Html$button = _VirtualDom_node('button');
-var $elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
-};
-var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
-var $elm$html$Html$Events$on = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$Normal(decoder));
-	});
-var $elm$html$Html$Events$onClick = function (msg) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'click',
-		$elm$json$Json$Decode$succeed(msg));
-};
-var $author$project$Main$viewAttackStyle = function (model) {
-	return A2(
-		$elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				$elm$html$Html$button,
-				_List_fromArray(
-					[
-						$elm$html$Html$Events$onClick(
-						$author$project$Main$SetAttackStyle($author$project$Main$AccuracyStyle)),
-						$author$project$Main$activeAttackStyle(
-						_Utils_eq(model.attackStyle, $author$project$Main$AccuracyStyle))
-					]),
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Accuracy')
-					])),
-				A2(
-				$elm$html$Html$button,
-				_List_fromArray(
-					[
-						$elm$html$Html$Events$onClick(
-						$author$project$Main$SetAttackStyle($author$project$Main$StrengthStyle)),
-						$author$project$Main$activeAttackStyle(
-						_Utils_eq(model.attackStyle, $author$project$Main$StrengthStyle))
-					]),
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Strength')
-					])),
-				A2(
-				$elm$html$Html$button,
-				_List_fromArray(
-					[
-						$elm$html$Html$Events$onClick(
-						$author$project$Main$SetAttackStyle($author$project$Main$DefenseStyle)),
-						$author$project$Main$activeAttackStyle(
-						_Utils_eq(model.attackStyle, $author$project$Main$DefenseStyle))
-					]),
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Defense')
-					]))
-			]));
+var $avh4$elm_color$Color$darkBrown = A4($avh4$elm_color$Color$RgbaSpace, 143 / 255, 89 / 255, 2 / 255, 1.0);
+var $avh4$elm_color$Color$yellow = A4($avh4$elm_color$Color$RgbaSpace, 237 / 255, 212 / 255, 0 / 255, 1.0);
+var $author$project$Inventory$viewGroundItem = function (groundItem) {
+	var color = function () {
+		var _v0 = groundItem.item;
+		if (_v0.$ === 'Coins') {
+			return $avh4$elm_color$Color$yellow;
+		} else {
+			return $avh4$elm_color$Color$darkBrown;
+		}
+	}();
+	return A5(
+		$ianmackenzie$elm_3d_scene$Scene3d$quad,
+		$ianmackenzie$elm_3d_scene$Scene3d$Material$color(color),
+		A2(
+			$ianmackenzie$elm_geometry$Point3d$translateBy,
+			A3($ianmackenzie$elm_geometry$Vector3d$meters, -0.5, -0.5, 0),
+			groundItem.location),
+		A2(
+			$ianmackenzie$elm_geometry$Point3d$translateBy,
+			A3($ianmackenzie$elm_geometry$Vector3d$meters, 0.5, -0.5, 0),
+			groundItem.location),
+		A2(
+			$ianmackenzie$elm_geometry$Point3d$translateBy,
+			A3($ianmackenzie$elm_geometry$Vector3d$meters, 0.5, 0.5, 0),
+			groundItem.location),
+		A2(
+			$ianmackenzie$elm_geometry$Point3d$translateBy,
+			A3($ianmackenzie$elm_geometry$Vector3d$meters, -0.5, 0.5, 0),
+			groundItem.location));
 };
 var $author$project$Main$px = function (x) {
 	return $elm$core$String$fromFloat(x) + 'px';
 };
+var $author$project$Main$redDamage = '#d33030';
 var $ianmackenzie$elm_units$Quantity$ratio = F2(
 	function (_v0, _v1) {
 		var x = _v0.a;
@@ -14774,6 +15992,8 @@ var $author$project$Main$getStateText = function (model) {
 			} else {
 				return 'Walking';
 			}
+		case 'PickingUpItem':
+			return 'Getting item';
 		case 'Attacking':
 			return 'Attacking';
 		default:
@@ -14821,6 +16041,258 @@ var $author$project$Main$viewPlayerText = function (model) {
 				$author$project$Main$getStateText(model))
 			]));
 };
+var $author$project$Main$viewGame = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				A2($elm$html$Html$Attributes$style, 'position', 'relative'),
+				A2($elm$html$Html$Attributes$style, 'overflow', 'hidden'),
+				A2($elm$html$Html$Attributes$style, 'user-select', 'none')
+			]),
+		_List_fromArray(
+			[
+				$ianmackenzie$elm_3d_scene$Scene3d$unlit(
+				{
+					background: $ianmackenzie$elm_3d_scene$Scene3d$transparentBackground,
+					camera: $author$project$Main$getCamera(model),
+					clipDepth: $ianmackenzie$elm_units$Length$meters(1),
+					dimensions: _Utils_Tuple2(
+						$ianmackenzie$elm_units$Pixels$pixels(
+							$elm$core$Basics$round($author$project$Main$screenWidth)),
+						$ianmackenzie$elm_units$Pixels$pixels(
+							$elm$core$Basics$round($author$project$Main$screenHeight))),
+					entities: _Utils_ap(
+						$author$project$GameMap$tiles,
+						_Utils_ap(
+							A2($elm$core$List$map, $author$project$Inventory$viewGroundItem, model.groundItems),
+							A2(
+								$elm$core$List$cons,
+								A2(
+									$author$project$Main$viewSquare,
+									$author$project$Main$playerColor(model.appearance),
+									model.location),
+								A2($elm$core$List$map, $author$project$Main$viewMonster, model.monsters))))
+				}),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				A2(
+					$elm$core$List$map,
+					function (mon) {
+						if (mon.$ === 'AliveMonster') {
+							var monster = mon.a;
+							return A4(
+								$author$project$Main$viewHealthBar,
+								$author$project$Main$getCamera(model),
+								monster.health,
+								monster.maxHealth,
+								monster.location);
+						} else {
+							return $elm$html$Html$text('');
+						}
+					},
+					model.monsters)),
+				$author$project$Main$viewPlayerText(model),
+				A4(
+				$author$project$Main$viewHealthBar,
+				$author$project$Main$getCamera(model),
+				model.health,
+				model.maxHealth,
+				model.location),
+				A3(
+				$author$project$Main$viewHits,
+				$author$project$Main$getCamera(model),
+				model.hits,
+				model.location),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				A2(
+					$elm$core$List$map,
+					$author$project$Main$viewMonsterText(
+						$author$project$Main$getCamera(model)),
+					model.monsters)),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				A2(
+					$elm$core$List$map,
+					function (mon) {
+						if (mon.$ === 'AliveMonster') {
+							var monster = mon.a;
+							return A3(
+								$author$project$Main$viewHits,
+								$author$project$Main$getCamera(model),
+								monster.hits,
+								monster.location);
+						} else {
+							return $elm$html$Html$text('');
+						}
+					},
+					model.monsters))
+			]));
+};
+var $author$project$Main$AttackStylePanel = {$: 'AttackStylePanel'};
+var $author$project$Main$SetSidePanel = function (a) {
+	return {$: 'SetSidePanel', a: a};
+};
+var $elm$html$Html$button = _VirtualDom_node('button');
+var $elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var $elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var $elm$html$Html$Events$onClick = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'click',
+		$elm$json$Json$Decode$succeed(msg));
+};
+var $author$project$Main$sidePanelButton = F3(
+	function (sidePanel, model, buttonText) {
+		return A2(
+			$elm$html$Html$button,
+			_List_fromArray(
+				[
+					$elm$html$Html$Events$onClick(
+					$author$project$Main$SetSidePanel(sidePanel)),
+					A2(
+					$elm$html$Html$Attributes$style,
+					'background-color',
+					_Utils_eq(model.sidePanel, sidePanel) ? $author$project$Main$redDamage : ''),
+					A2($elm$html$Html$Attributes$style, 'height', '50px'),
+					A2($elm$html$Html$Attributes$style, 'flex-grow', '1')
+				]),
+			_List_fromArray(
+				[
+					$elm$html$Html$text(buttonText)
+				]));
+	});
+var $author$project$Main$SetAttackStyle = function (a) {
+	return {$: 'SetAttackStyle', a: a};
+};
+var $author$project$Main$activeAttackStyle = function (isActive) {
+	return isActive ? A2($elm$html$Html$Attributes$style, 'background-color', $author$project$Main$redDamage) : A2($elm$html$Html$Attributes$style, '', '');
+};
+var $author$project$Main$viewAttackStyle = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick(
+						$author$project$Main$SetAttackStyle($author$project$Main$AccuracyStyle)),
+						$author$project$Main$activeAttackStyle(
+						_Utils_eq(model.attackStyle, $author$project$Main$AccuracyStyle))
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Accuracy')
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick(
+						$author$project$Main$SetAttackStyle($author$project$Main$StrengthStyle)),
+						$author$project$Main$activeAttackStyle(
+						_Utils_eq(model.attackStyle, $author$project$Main$StrengthStyle))
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Strength')
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick(
+						$author$project$Main$SetAttackStyle($author$project$Main$DefenseStyle)),
+						$author$project$Main$activeAttackStyle(
+						_Utils_eq(model.attackStyle, $author$project$Main$DefenseStyle))
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Defense')
+					]))
+			]));
+};
+var $elm$core$List$repeatHelp = F3(
+	function (result, n, value) {
+		repeatHelp:
+		while (true) {
+			if (n <= 0) {
+				return result;
+			} else {
+				var $temp$result = A2($elm$core$List$cons, value, result),
+					$temp$n = n - 1,
+					$temp$value = value;
+				result = $temp$result;
+				n = $temp$n;
+				value = $temp$value;
+				continue repeatHelp;
+			}
+		}
+	});
+var $elm$core$List$repeat = F2(
+	function (n, value) {
+		return A3($elm$core$List$repeatHelp, _List_Nil, n, value);
+	});
+var $author$project$Inventory$viewItem = function (item) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('item-box')
+			]),
+		function () {
+			if (item.$ === 'Nothing') {
+				return _List_Nil;
+			} else {
+				if (item.a.$ === 'Coins') {
+					var amount = item.a.a;
+					return _List_fromArray(
+						[
+							$elm$html$Html$text(
+							'Coins: ' + $elm$core$String$fromInt(amount))
+						]);
+				} else {
+					var _v1 = item.a;
+					return _List_fromArray(
+						[
+							$elm$html$Html$text('Bronze dagger')
+						]);
+				}
+			}
+		}());
+};
+var $author$project$Inventory$viewInventory = function (_v0) {
+	var items = _v0.a;
+	var paddedItems = A2(
+		$elm$core$List$take,
+		$author$project$Inventory$maxInventoryItems,
+		_Utils_ap(
+			A2($elm$core$List$map, $elm$core$Maybe$Just, items),
+			A2($elm$core$List$repeat, $author$project$Inventory$maxInventoryItems, $elm$core$Maybe$Nothing)));
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('inventory')
+			]),
+		A2($elm$core$List$map, $author$project$Inventory$viewItem, paddedItems));
+};
 var $author$project$Main$viewXp = F2(
 	function (skill, xp) {
 		return A2(
@@ -14843,6 +16315,53 @@ var $author$project$Main$viewXpBar = function (model) {
 				A2($author$project$Main$viewXp, 'Defense', model.defenseXp)
 			]));
 };
+var $author$project$Main$viewSidePanel = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				A2($elm$html$Html$Attributes$style, 'width', '320px')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$div,
+				_List_fromArray(
+					[
+						A2($elm$html$Html$Attributes$style, 'display', 'flex')
+					]),
+				_List_fromArray(
+					[
+						A3($author$project$Main$sidePanelButton, $author$project$Main$AttackStylePanel, model, 'Attack Style'),
+						A3($author$project$Main$sidePanelButton, $author$project$Main$InventoryPanel, model, 'Inventory')
+					])),
+				function () {
+				var _v0 = model.sidePanel;
+				if (_v0.$ === 'AttackStylePanel') {
+					return A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Attack style'),
+								A2(
+								$elm$html$Html$div,
+								_List_fromArray(
+									[
+										A2($elm$html$Html$Attributes$style, 'margin-bottom', '20px')
+									]),
+								_List_fromArray(
+									[
+										$author$project$Main$viewAttackStyle(model),
+										$author$project$Main$viewXpBar(model)
+									]))
+							]));
+				} else {
+					return $author$project$Inventory$viewInventory(model.inventory);
+				}
+			}()
+			]));
+};
 var $author$project$Main$view = function (model) {
 	return A2(
 		$elm$html$Html$div,
@@ -14853,102 +16372,12 @@ var $author$project$Main$view = function (model) {
 				$elm$html$Html$div,
 				_List_fromArray(
 					[
-						A2($elm$html$Html$Attributes$style, 'border', '1px solid white'),
-						A2($elm$html$Html$Attributes$style, 'display', 'inline-block'),
-						A2($elm$html$Html$Attributes$style, 'position', 'relative'),
-						A2($elm$html$Html$Attributes$style, 'overflow', 'hidden'),
-						A2($elm$html$Html$Attributes$style, 'user-select', 'none')
+						$elm$html$Html$Attributes$class('game-container')
 					]),
 				_List_fromArray(
 					[
-						$ianmackenzie$elm_3d_scene$Scene3d$unlit(
-						{
-							background: $ianmackenzie$elm_3d_scene$Scene3d$transparentBackground,
-							camera: $author$project$Main$getCamera(model),
-							clipDepth: $ianmackenzie$elm_units$Length$meters(1),
-							dimensions: _Utils_Tuple2(
-								$ianmackenzie$elm_units$Pixels$pixels(
-									$elm$core$Basics$round($author$project$Main$screenWidth)),
-								$ianmackenzie$elm_units$Pixels$pixels(
-									$elm$core$Basics$round($author$project$Main$screenHeight))),
-							entities: _Utils_ap(
-								$author$project$GameMap$tiles,
-								A2(
-									$elm$core$List$cons,
-									A2(
-										$author$project$Main$viewSquare,
-										$author$project$Main$playerColor(model.appearance),
-										model.location),
-									A2($elm$core$List$map, $author$project$Main$viewMonster, model.monsters)))
-						}),
-						A2(
-						$elm$html$Html$div,
-						_List_Nil,
-						A2(
-							$elm$core$List$map,
-							function (mon) {
-								if (mon.$ === 'AliveMonster') {
-									var monster = mon.a;
-									return A4(
-										$author$project$Main$viewHealthBar,
-										$author$project$Main$getCamera(model),
-										monster.health,
-										monster.maxHealth,
-										monster.location);
-								} else {
-									return $elm$html$Html$text('');
-								}
-							},
-							model.monsters)),
-						$author$project$Main$viewPlayerText(model),
-						A4(
-						$author$project$Main$viewHealthBar,
-						$author$project$Main$getCamera(model),
-						model.health,
-						model.maxHealth,
-						model.location),
-						A3(
-						$author$project$Main$viewHits,
-						$author$project$Main$getCamera(model),
-						model.hits,
-						model.location),
-						A2(
-						$elm$html$Html$div,
-						_List_Nil,
-						A2(
-							$elm$core$List$map,
-							$author$project$Main$viewMonsterText(
-								$author$project$Main$getCamera(model)),
-							model.monsters)),
-						A2(
-						$elm$html$Html$div,
-						_List_Nil,
-						A2(
-							$elm$core$List$map,
-							function (mon) {
-								if (mon.$ === 'AliveMonster') {
-									var monster = mon.a;
-									return A3(
-										$author$project$Main$viewHits,
-										$author$project$Main$getCamera(model),
-										monster.hits,
-										monster.location);
-								} else {
-									return $elm$html$Html$text('');
-								}
-							},
-							model.monsters))
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_fromArray(
-					[
-						A2($elm$html$Html$Attributes$style, 'margin-bottom', '20px')
-					]),
-				_List_fromArray(
-					[
-						$author$project$Main$viewAttackStyle(model),
-						$author$project$Main$viewXpBar(model)
+						$author$project$Main$viewGame(model),
+						$author$project$Main$viewSidePanel(model)
 					])),
 				A2(
 				$elm$html$Html$div,
