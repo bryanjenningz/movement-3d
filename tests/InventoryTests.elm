@@ -20,7 +20,7 @@ groundItem =
 dropItemTests : Test
 dropItemTests =
     describe "dropItem"
-        [ test "Creates a ground item" <|
+        [ test "Drops an item from the inventory" <|
             \_ ->
                 Expect.equalLists
                     [ dropItem groundItemLocation 0 0 (fromItems [ Coins 1 ]) ]
@@ -31,9 +31,13 @@ dropItemTests =
 pickUpItemTests : Test
 pickUpItemTests =
     describe "pickUpItem"
-        [ test "Creates an item" <|
+        [ test "Adds an item to the inventory if there's space" <|
             \_ ->
                 Expect.equalLists
-                    [ pickUpItem groundItem init |> toItems ]
-                    [ [ Coins 1 ] ]
+                    [ init |> pickUpItem groundItem |> toItems
+                    , init |> pickUpItem groundItem |> pickUpItem groundItem |> toItems
+                    ]
+                    [ [ Coins 1 ]
+                    , [ Coins 2 ]
+                    ]
         ]

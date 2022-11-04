@@ -57,11 +57,32 @@ dropItem location time itemIndex (Inventory items) =
 
 pickUpItem : GroundItem -> Inventory -> Inventory
 pickUpItem groundItem (Inventory items) =
-    if List.length items >= maxInventoryItems then
-        Inventory items
+    case groundItem.item of
+        Coins amount ->
+            case List.findIndex isCoins items of
+                Nothing ->
+                    if List.length items >= maxInventoryItems then
+                        Inventory items
 
-    else
-        Inventory (items ++ [ groundItem.item ])
+                    else
+                        Inventory (items ++ [ groundItem.item ])
+
+                Just coinsIndex ->
+                    Inventory (List.updateAt coinsIndex (addCoins amount) items)
+
+
+isCoins : Item -> Bool
+isCoins item =
+    case item of
+        Coins _ ->
+            True
+
+
+addCoins : Int -> Item -> Item
+addCoins addAmount item =
+    case item of
+        Coins amount ->
+            Coins (amount + addAmount)
 
 
 maxInventoryItems : Int
