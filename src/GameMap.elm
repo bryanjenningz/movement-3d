@@ -92,7 +92,7 @@ gameWallEntities =
 
 gameWalls : List Obstacle
 gameWalls =
-    viewBuilding ( 5, 7 )
+    viewBuilding ( 5, 6 )
 
 
 viewBuilding : Xy -> List Obstacle
@@ -145,17 +145,17 @@ obstacleToEntity obstacle =
     case obstacle of
         HorizontalWall ( x, y ) length ->
             Scene3d.quad (Material.color Color.darkBrown)
-                (Point3d.meters (toFloat x - 0.5) (toFloat y - 0.5) 1)
-                (Point3d.meters (toFloat x - 0.5) (toFloat y - 0.5) 0)
-                (Point3d.meters (toFloat x + toFloat length - 0.5) (toFloat y - 0.5) 0)
-                (Point3d.meters (toFloat x + toFloat length - 0.5) (toFloat y - 0.5) 1)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y + 0.5) 1)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y + 0.5) 0)
+                (Point3d.meters (toFloat x + toFloat length - 0.5) (toFloat y + 0.5) 0)
+                (Point3d.meters (toFloat x + toFloat length - 0.5) (toFloat y + 0.5) 1)
 
         VerticalWall ( x, y ) length ->
             Scene3d.quad (Material.color Color.darkBrown)
-                (Point3d.meters (toFloat x - 0.5) (toFloat y - 0.5) 1)
-                (Point3d.meters (toFloat x - 0.5) (toFloat y - 0.5) 0)
-                (Point3d.meters (toFloat x - 0.5) (toFloat y - toFloat length - 0.5) 0)
-                (Point3d.meters (toFloat x - 0.5) (toFloat y - toFloat length - 0.5) 1)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y + 0.5) 1)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y + 0.5) 0)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y - toFloat length + 0.5) 0)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y - toFloat length + 0.5) 1)
 
 
 shortestGamePath : Xy -> Xy -> Maybe (List Xy)
