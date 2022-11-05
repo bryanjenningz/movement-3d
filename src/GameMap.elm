@@ -1,4 +1,4 @@
-module GameMap exposing (tiles, walls)
+module GameMap exposing (gameWalls, tiles)
 
 import Color exposing (Color)
 import Length exposing (Meters)
@@ -70,8 +70,8 @@ type alias Wall =
     }
 
 
-walls : List (Scene3d.Entity Meters)
-walls =
+gameWalls : List (Scene3d.Entity Meters)
+gameWalls =
     viewBuilding (Point3d.meters 4 2 0)
 
 
