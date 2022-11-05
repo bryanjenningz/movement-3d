@@ -1,4 +1,4 @@
-module GameMap exposing (gameWalls, tiles)
+module GameMap exposing (gameWalls, tiles, unwalkableEdges)
 
 import Color exposing (Color)
 import Length exposing (Meters)
@@ -101,3 +101,12 @@ viewBuilding location =
     , { x1 = x + 0.5, y1 = y + 0.5, x2 = x + 1.5, y2 = y + 0.5 }
     ]
         |> List.map viewWall
+
+
+type alias Xy =
+    { x : Float, y : Float }
+
+
+unwalkableEdges : List Wall -> List ( Xy, Xy )
+unwalkableEdges walls =
+    []
