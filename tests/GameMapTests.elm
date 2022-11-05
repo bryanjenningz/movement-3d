@@ -100,6 +100,31 @@ shortestPathTests =
                         ]
                         ( 0, 0 )
                         ( 0, 1 )
+                    , shortestPath
+                        [ VerticalWall ( 0, 0 ) 1
+                        , HorizontalWall ( 0, 0 ) 1
+                        , HorizontalWall ( 0, -1 ) 1
+                        ]
+                        ( 0, 0 )
+                        ( 0, 1 )
+                    , shortestPath
+                        [ VerticalWall ( 1, 0 ) 1
+                        , HorizontalWall ( 0, 0 ) 1
+                        , HorizontalWall ( 0, -1 ) 1
+                        ]
+                        ( 0, 0 )
+                        ( 0, 1 )
+                    , shortestPath
+                        [ VerticalWall ( 0, 0 ) 1
+                        , VerticalWall ( 1, 0 ) 1
+                        , HorizontalWall ( 0, 0 ) 1
+                        ]
+                        ( 0, 0 )
+                        ( 0, 1 )
                     ]
-                    [ Nothing ]
+                    [ Nothing
+                    , Just [ ( 0, 0 ), ( 1, 0 ), ( 1, 1 ), ( 0, 1 ) ]
+                    , Just [ ( 0, 0 ), ( -1, 0 ), ( -1, 1 ), ( 0, 1 ) ]
+                    , Just [ ( 0, 0 ), ( 0, -1 ), ( -1, -1 ), ( -1, 0 ), ( -1, 1 ), ( 0, 1 ) ]
+                    ]
         ]
