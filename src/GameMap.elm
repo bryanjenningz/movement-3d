@@ -3,6 +3,7 @@ module GameMap exposing (Obstacle(..), gameWalls, shortestPath, tiles, unwalkabl
 import Color exposing (Color)
 import Length exposing (Meters)
 import Point3d exposing (Point3d)
+import Queue exposing (Queue)
 import Scene3d
 import Scene3d.Material as Material
 import Set exposing (Set)
@@ -140,10 +141,38 @@ shortestPath obstacles start end =
             |> List.concatMap (\( xy1, xy2 ) -> [ ( xy1, xy2 ), ( xy2, xy1 ) ])
             |> Set.fromList
         )
-        start
+        (Queue.fromList [ ( start, [] ) ])
         end
 
 
-shortestPath_ : Set ( Xy, Xy ) -> Xy -> Xy -> Maybe (List Xy)
-shortestPath_ unwalkableParts start end =
-    Just []
+shortestPath_ : Set ( Xy, Xy ) -> Queue ( Xy, List Xy ) -> Xy -> Maybe (List Xy)
+shortestPath_ unwalkableParts queue end =
+    case Queue.remove queue of
+        ( Nothing, _ ) ->
+            Nothing
+
+        ( Just ( xy, path ), newQueue ) ->
+            if xy == end then
+                Just (List.reverse (end :: path))
+
+            else
+                shortestPath_ unwalkableParts
+                    (List.foldl
+                        (\neighbor newQueue_ -> Queue.add ( neighbor, xy :: path ) newQueue_)
+                        newQueue
+                        (neighbors xy)
+                    )
+                    end
+
+
+neighbors : Xy -> List Xy
+neighbors ( x, y ) =
+    [ ( x, y - 1 )
+    , ( x, y + 1 )
+    , ( x - 1, y )
+    , ( x + 1, y )
+    , ( x - 1, y - 1 )
+    , ( x + 1, y - 1 )
+    , ( x + 1, y + 1 )
+    , ( x - 1, y + 1 )
+    ]
