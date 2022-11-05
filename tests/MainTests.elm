@@ -153,8 +153,9 @@ mouseDown =
                 Expect.equal (Main.update (Main.MouseDown (Point2d.pixels 200 200)) initialModel)
                     ( { initialModel
                         | travelPath =
-                            [ Point3d.fromMeters { x = -1, y = -1, z = 0 }
-                            , Point3d.fromMeters { x = -2, y = -2, z = 0 }
+                            [ Point3d.fromMeters { x = 0, y = 0, z = 0 }
+                            , Point3d.fromMeters { x = 0, y = -1, z = 0 }
+                            , Point3d.fromMeters { x = -1, y = -2, z = 0 }
                             , Point3d.fromMeters { x = -2, y = -3, z = 0 }
                             ]
                         , appearance = Main.Attacking goblin2
@@ -171,7 +172,7 @@ mouseDown =
                         toMousePoint modelRightNextToMonster (Point3d.fromMeters { x = -3, y = -3, z = 0 })
                 in
                 Expect.equal (Main.update (Main.MouseDown mousePoint) modelRightNextToMonster)
-                    ( { modelRightNextToMonster | appearance = Main.Attacking goblin2 }
+                    ( { modelRightNextToMonster | appearance = Main.Attacking goblin2, travelPath = [ Point3d.fromMeters { x = -3, y = -2, z = 0 } ] }
                     , Cmd.none
                     )
         , test "Moves player to the monster's side if the player attacks while on top of the monster" <|
@@ -185,7 +186,7 @@ mouseDown =
                 in
                 Expect.equal (Main.update (Main.MouseDown mousePoint) modelOnTopOfMonster)
                     ( { modelOnTopOfMonster
-                        | travelPath = [ Point3d.fromMeters { x = -2, y = -3, z = 0 } ]
+                        | travelPath = [ Point3d.fromMeters { x = -3, y = -3, z = 0 }, Point3d.fromMeters { x = -2, y = -3, z = 0 } ]
                         , appearance = Main.Attacking goblin2
                       }
                     , Cmd.none
@@ -208,9 +209,9 @@ mouseDown =
                     ( { startModel
                         | travelPath =
                             [ Point3d.fromMeters { x = 0, y = 1, z = 0 }
-                            , Point3d.fromMeters { x = -1, y = 0, z = 0 }
-                            , Point3d.fromMeters { x = -2, y = -1, z = 0 }
-                            , Point3d.fromMeters { x = -2, y = -2, z = 0 }
+                            , Point3d.fromMeters { x = 0, y = 0, z = 0 }
+                            , Point3d.fromMeters { x = 0, y = -1, z = 0 }
+                            , Point3d.fromMeters { x = -1, y = -2, z = 0 }
                             , Point3d.fromMeters { x = -2, y = -3, z = 0 }
                             ]
                         , appearance = Main.Attacking goblin2

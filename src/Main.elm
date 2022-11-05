@@ -24,6 +24,7 @@ import Html.Events exposing (onClick)
 import Inventory exposing (GroundItem, Inventory, Item(..))
 import Json.Decode as Decode
 import Length exposing (Meters)
+import List.Extra as List
 import Monster exposing (AliveMonsterState, Hit, Location, Monster(..), TravelPath)
 import Pixels exposing (Pixels)
 import Plane3d
@@ -243,15 +244,7 @@ applyAnimationFrame time model =
         ( newLocation, newTravelPath ) =
             case model.appearance of
                 Attacking monster ->
-                    let
-                        destination =
-                            Maybe.withDefault monster.location (List.head monster.travelPath)
-
-                        monsterSide =
-                            closestSideOf destination model.location
-                    in
-                    updateLocationTravelPath model.location
-                        (Monster.shortestPath model.location monsterSide)
+                    updateLocationTravelPath model.location model.travelPath
 
                 Fighting monster ->
                     let
@@ -261,8 +254,7 @@ applyAnimationFrame time model =
                         monsterSide =
                             closestSideOf destination model.location
                     in
-                    updateLocationTravelPath model.location
-                        (Monster.shortestPath model.location monsterSide)
+                    updateLocationTravelPath model.location [ monsterSide ]
 
                 Standing ->
                     updateLocationTravelPath model.location model.travelPath
@@ -399,15 +391,11 @@ applyMouseDown mousePoint model =
                         let
                             monsterSide =
                                 closestSideOf destination model.location
-
-                            newTravelPath =
-                                (start :: Monster.shortestPath start monsterSide)
-                                    |> List.filter (\point -> point /= model.location)
                         in
-                        { model | travelPath = newTravelPath, appearance = Attacking monster }
+                        { model | travelPath = shortestGamePath start monsterSide, appearance = Attacking monster }
 
                     ( _, Just groundItem ) ->
-                        { model | travelPath = Monster.shortestPath start destination, appearance = PickingUpItem groundItem }
+                        { model | travelPath = shortestGamePath start destination, appearance = PickingUpItem groundItem }
 
                     _ ->
                         { model | travelPath = shortestGamePath start destination, appearance = Standing }
