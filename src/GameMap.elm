@@ -1,4 +1,4 @@
-module GameMap exposing (Obstacle(..), gameWalls, tiles, unwalkableEdges)
+module GameMap exposing (Obstacle(..), gameWalls, shortestPath, tiles, unwalkableEdges)
 
 import Color exposing (Color)
 import Length exposing (Meters)
@@ -130,3 +130,8 @@ obstacleToEntity obstacle =
                 (Point3d.meters (toFloat x - 0.5) (toFloat y - 0.5) 0)
                 (Point3d.meters (toFloat x - 0.5) (toFloat y - toFloat length - 0.5) 0)
                 (Point3d.meters (toFloat x - 0.5) (toFloat y - toFloat length - 0.5) 1)
+
+
+shortestPath : List Obstacle -> Xy -> Xy -> Maybe (List Xy)
+shortestPath obstacles start end =
+    Just []

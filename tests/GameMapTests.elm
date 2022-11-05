@@ -1,7 +1,7 @@
 module GameMapTests exposing (..)
 
 import Expect
-import GameMap exposing (Obstacle(..), unwalkableEdges)
+import GameMap exposing (Obstacle(..), shortestPath, unwalkableEdges)
 import Test exposing (Test, describe, test)
 
 
@@ -27,4 +27,15 @@ unwalkableEdgesTests =
                     , [ ( ( -1, 0 ), ( 0, 0 ) ) ]
                     , [ ( ( -1, -1 ), ( 0, -1 ) ), ( ( -1, 0 ), ( 0, 0 ) ) ]
                     ]
+        ]
+
+
+shortestPathTests : Test
+shortestPathTests =
+    describe "shortestPath"
+        [ test "Gives the shortest path between 2 points" <|
+            \_ ->
+                Expect.equalLists
+                    [ shortestPath [] ( 0, 0 ) ( 0, 0 ) ]
+                    [ Just [] ]
         ]
