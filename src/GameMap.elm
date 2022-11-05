@@ -1,4 +1,4 @@
-module GameMap exposing (gameWalls, tiles, unwalkableEdges)
+module GameMap exposing (Obstacle(..), gameWalls, tiles, unwalkableEdges)
 
 import Color exposing (Color)
 import Length exposing (Meters)
@@ -104,9 +104,24 @@ viewBuilding location =
 
 
 type alias Xy =
-    { x : Float, y : Float }
+    ( Int, Int )
 
 
-unwalkableEdges : List Wall -> List ( Xy, Xy )
-unwalkableEdges walls =
-    []
+type alias WallLength =
+    Int
+
+
+type Obstacle
+    = HorizontalWall Xy WallLength
+
+
+unwalkableEdges : List Obstacle -> List ( Xy, Xy )
+unwalkableEdges obstacles =
+    List.concatMap obstacleEdges obstacles
+
+
+obstacleEdges : Obstacle -> List ( Xy, Xy )
+obstacleEdges obstacle =
+    case obstacle of
+        HorizontalWall ( x, y ) length ->
+            List.range x (x + length - 1) |> List.map (\newX -> ( ( newX, y ), ( newX, y + 1 ) ))
