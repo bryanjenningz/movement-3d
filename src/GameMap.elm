@@ -129,3 +129,21 @@ obstacleEdges obstacle =
 
         VerticalWall ( x, y ) length ->
             List.range (y - length + 1) y |> List.map (\newY -> ( ( x - 1, newY ), ( x, newY ) ))
+
+
+obstacleToEntity : Obstacle -> Scene3d.Entity Meters
+obstacleToEntity obstacle =
+    case obstacle of
+        HorizontalWall ( x, y ) length ->
+            Scene3d.quad (Material.color Color.darkBrown)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y + 0.5) 0)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y + 0.5) 1)
+                (Point3d.meters (toFloat x + toFloat length + 0.5) (toFloat y + 0.5) 0)
+                (Point3d.meters (toFloat x + toFloat length + 0.5) (toFloat y + 0.5) 1)
+
+        VerticalWall ( x, y ) length ->
+            Scene3d.quad (Material.color Color.darkBrown)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y + 0.5) 0)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y + 0.5) 1)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y - toFloat length - 0.5) 0)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y - toFloat length - 0.5) 1)
