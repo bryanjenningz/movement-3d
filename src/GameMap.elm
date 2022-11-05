@@ -102,7 +102,7 @@ gameWalls =
 
 walls : List (Scene3d.Entity Meters)
 walls =
-    viewBuilding (Point3d.meters 0 0 0)
+    viewBuilding (Point3d.meters 4 2 0)
 
 
 viewWall : Wall -> Scene3d.Entity Meters
@@ -124,10 +124,10 @@ viewBuilding location =
         { x, y } =
             Point3d.toMeters location
     in
-    [ { x1 = x + 4.5, y1 = y + 6.5, x2 = x + 4.5, y2 = y + 2.5 }
-    , { x1 = x + 4.5, y1 = y + 6.5, x2 = x + 7.5, y2 = y + 6.5 }
-    , { x1 = x + 7.5, y1 = y + 6.5, x2 = x + 7.5, y2 = y + 2.5 }
-    , { x1 = x + 6.5, y1 = y + 2.5, x2 = x + 7.5, y2 = y + 2.5 }
-    , { x1 = x + 4.5, y1 = y + 2.5, x2 = x + 5.5, y2 = y + 2.5 }
+    [ { x1 = x + 0.5, y1 = y + 4.5, x2 = x + 0.5, y2 = y + 0.5 }
+    , { x1 = x + 0.5, y1 = y + 4.5, x2 = x + 3.5, y2 = y + 4.5 }
+    , { x1 = x + 3.5, y1 = y + 4.5, x2 = x + 3.5, y2 = y + 0.5 }
+    , { x1 = x + 2.5, y1 = y + 0.5, x2 = x + 3.5, y2 = y + 0.5 }
+    , { x1 = x + 0.5, y1 = y + 0.5, x2 = x + 1.5, y2 = y + 0.5 }
     ]
         |> List.map viewWall
