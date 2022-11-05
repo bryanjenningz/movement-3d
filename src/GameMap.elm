@@ -8,6 +8,10 @@ import Scene3d.Material as Material
 import Vector3d
 
 
+
+-- Tiles --
+
+
 type alias Tile =
     { color : Color
     , x : Float
@@ -62,45 +66,8 @@ viewTile { color, xLength, yLength, x, y, z } =
         (Point3d.translateBy (Vector3d.meters -(xLength / 2) (yLength / 2) 0) point)
 
 
-type alias Wall =
-    { x1 : Float
-    , y1 : Float
-    , x2 : Float
-    , y2 : Float
-    }
 
-
-gameWalls : List (Scene3d.Entity Meters)
-gameWalls =
-    viewBuilding ( 4, 2 )
-
-
-viewWall : Wall -> Scene3d.Entity Meters
-viewWall { x1, y1, x2, y2 } =
-    let
-        wallHeight =
-            1
-    in
-    Scene3d.quad (Material.color Color.darkBrown)
-        (Point3d.meters x1 y1 wallHeight)
-        (Point3d.meters x1 y1 0)
-        (Point3d.meters x2 y2 0)
-        (Point3d.meters x2 y2 wallHeight)
-
-
-viewBuilding : Xy -> List (Scene3d.Entity Meters)
-viewBuilding xy =
-    let
-        ( x, y ) =
-            Tuple.mapBoth toFloat toFloat xy
-    in
-    [ { x1 = x + 0.5, y1 = y + 4.5, x2 = x + 0.5, y2 = y + 0.5 }
-    , { x1 = x + 0.5, y1 = y + 4.5, x2 = x + 3.5, y2 = y + 4.5 }
-    , { x1 = x + 3.5, y1 = y + 4.5, x2 = x + 3.5, y2 = y + 0.5 }
-    , { x1 = x + 2.5, y1 = y + 0.5, x2 = x + 3.5, y2 = y + 0.5 }
-    , { x1 = x + 0.5, y1 = y + 0.5, x2 = x + 1.5, y2 = y + 0.5 }
-    ]
-        |> List.map viewWall
+-- Walls --
 
 
 type alias Xy =
@@ -114,6 +81,22 @@ type alias WallLength =
 type Obstacle
     = HorizontalWall Xy WallLength
     | VerticalWall Xy WallLength
+
+
+gameWalls : List (Scene3d.Entity Meters)
+gameWalls =
+    viewBuilding ( 5, 7 )
+
+
+viewBuilding : Xy -> List (Scene3d.Entity Meters)
+viewBuilding ( x, y ) =
+    [ VerticalWall ( x, y ) 4
+    , HorizontalWall ( x, y ) 3
+    , VerticalWall ( x + 3, y ) 4
+    , HorizontalWall ( x, y - 4 ) 1
+    , HorizontalWall ( x + 2, y - 4 ) 1
+    ]
+        |> List.map obstacleToEntity
 
 
 unwalkableEdges : List Obstacle -> List ( Xy, Xy )
@@ -136,14 +119,14 @@ obstacleToEntity obstacle =
     case obstacle of
         HorizontalWall ( x, y ) length ->
             Scene3d.quad (Material.color Color.darkBrown)
-                (Point3d.meters (toFloat x - 0.5) (toFloat y + 0.5) 0)
-                (Point3d.meters (toFloat x - 0.5) (toFloat y + 0.5) 1)
-                (Point3d.meters (toFloat x + toFloat length + 0.5) (toFloat y + 0.5) 0)
-                (Point3d.meters (toFloat x + toFloat length + 0.5) (toFloat y + 0.5) 1)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y - 0.5) 1)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y - 0.5) 0)
+                (Point3d.meters (toFloat x + toFloat length - 0.5) (toFloat y - 0.5) 0)
+                (Point3d.meters (toFloat x + toFloat length - 0.5) (toFloat y - 0.5) 1)
 
         VerticalWall ( x, y ) length ->
             Scene3d.quad (Material.color Color.darkBrown)
-                (Point3d.meters (toFloat x - 0.5) (toFloat y + 0.5) 0)
-                (Point3d.meters (toFloat x - 0.5) (toFloat y + 0.5) 1)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y - 0.5) 1)
+                (Point3d.meters (toFloat x - 0.5) (toFloat y - 0.5) 0)
                 (Point3d.meters (toFloat x - 0.5) (toFloat y - toFloat length - 0.5) 0)
                 (Point3d.meters (toFloat x - 0.5) (toFloat y - toFloat length - 0.5) 1)
