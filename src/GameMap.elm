@@ -30,7 +30,7 @@ gameTiles =
       , x = 0
       , y = 0
       , z = -0.02
-      , xLength = 17
+      , xLength = 19
       , yLength = 15
       }
     , { color = Color.darkGray
@@ -41,10 +41,10 @@ gameTiles =
       , yLength = 15
       }
     , { color = Color.darkGray
-      , x = 5
+      , x = 5.5
       , y = 0
       , z = -0.01
-      , xLength = 7
+      , xLength = 8
       , yLength = 3
       }
     ]
@@ -92,7 +92,7 @@ gameWallEntities =
 
 gameWalls : List Obstacle
 gameWalls =
-    viewBuilding ( 5, 6 )
+    viewBuilding ( 6, 6 )
 
 
 viewBuilding : Xy -> List Obstacle
