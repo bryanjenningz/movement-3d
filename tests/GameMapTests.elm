@@ -2,6 +2,7 @@ module GameMapTests exposing (..)
 
 import Expect
 import GameMap exposing (Obstacle(..), shortestPath, unwalkableEdges)
+import Set
 import Test exposing (Test, describe, test)
 
 
@@ -11,21 +12,61 @@ unwalkableEdgesTests =
         [ test "Creates a list of unwalkable edges" <|
             \_ ->
                 Expect.equalLists
-                    [ unwalkableEdges []
+                    [ unwalkableEdges [] |> Set.fromList
 
                     -- Wall between ( 0, 0 ) and ( 0, 1 )
-                    , unwalkableEdges [ HorizontalWall ( 0, 0 ) 1 ]
-                    , unwalkableEdges [ HorizontalWall ( 0, 0 ) 2 ]
+                    , unwalkableEdges [ HorizontalWall ( 0, 0 ) 1 ] |> Set.fromList
+                    , unwalkableEdges [ HorizontalWall ( 0, 0 ) 2 ] |> Set.fromList
 
                     -- Wall between ( 0, 0 ) and ( -1, 0 )
-                    , unwalkableEdges [ VerticalWall ( 0, 0 ) 1 ]
-                    , unwalkableEdges [ VerticalWall ( 0, 0 ) 2 ]
+                    , unwalkableEdges [ VerticalWall ( 0, 0 ) 1 ] |> Set.fromList
+                    , unwalkableEdges [ VerticalWall ( 0, 0 ) 2 ] |> Set.fromList
                     ]
-                    [ []
-                    , [ ( ( 0, 0 ), ( 0, 1 ) ) ]
-                    , [ ( ( 0, 0 ), ( 0, 1 ) ), ( ( 1, 0 ), ( 1, 1 ) ) ]
-                    , [ ( ( -1, 0 ), ( 0, 0 ) ) ]
-                    , [ ( ( -1, -1 ), ( 0, -1 ) ), ( ( -1, 0 ), ( 0, 0 ) ) ]
+                    [ Set.fromList []
+                    , Set.fromList
+                        [ ( ( 0, 0 ), ( -1, 1 ) )
+                        , ( ( 0, 0 ), ( 0, 1 ) )
+                        , ( ( 0, 0 ), ( 1, 1 ) )
+                        , ( ( 0, 1 ), ( -1, 0 ) )
+                        , ( ( 0, 1 ), ( 0, 0 ) )
+                        , ( ( 0, 1 ), ( 1, 0 ) )
+                        ]
+                    , Set.fromList
+                        [ ( ( 0, 0 ), ( -1, 1 ) )
+                        , ( ( 0, 0 ), ( 0, 1 ) )
+                        , ( ( 0, 0 ), ( 1, 1 ) )
+                        , ( ( 0, 1 ), ( -1, 0 ) )
+                        , ( ( 0, 1 ), ( 0, 0 ) )
+                        , ( ( 0, 1 ), ( 1, 0 ) )
+                        , ( ( 1, 0 ), ( 0, 1 ) )
+                        , ( ( 1, 0 ), ( 1, 1 ) )
+                        , ( ( 1, 0 ), ( 2, 1 ) )
+                        , ( ( 1, 1 ), ( 0, 0 ) )
+                        , ( ( 1, 1 ), ( 1, 0 ) )
+                        , ( ( 1, 1 ), ( 2, 0 ) )
+                        ]
+                    , Set.fromList
+                        [ ( ( -1, 0 ), ( 0, -1 ) )
+                        , ( ( -1, 0 ), ( 0, 0 ) )
+                        , ( ( -1, 0 ), ( 0, 1 ) )
+                        , ( ( 0, 0 ), ( -1, -1 ) )
+                        , ( ( 0, 0 ), ( -1, 0 ) )
+                        , ( ( 0, 0 ), ( -1, 1 ) )
+                        ]
+                    , Set.fromList
+                        [ ( ( -1, -1 ), ( 0, -2 ) )
+                        , ( ( -1, -1 ), ( 0, -1 ) )
+                        , ( ( -1, -1 ), ( 0, 0 ) )
+                        , ( ( -1, 0 ), ( 0, -1 ) )
+                        , ( ( -1, 0 ), ( 0, 0 ) )
+                        , ( ( -1, 0 ), ( 0, 1 ) )
+                        , ( ( 0, -1 ), ( -1, -2 ) )
+                        , ( ( 0, -1 ), ( -1, -1 ) )
+                        , ( ( 0, -1 ), ( -1, 0 ) )
+                        , ( ( 0, 0 ), ( -1, -1 ) )
+                        , ( ( 0, 0 ), ( -1, 0 ) )
+                        , ( ( 0, 0 ), ( -1, 1 ) )
+                        ]
                     ]
         ]
 

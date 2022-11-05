@@ -110,10 +110,30 @@ obstacleEdges : Obstacle -> List ( Xy, Xy )
 obstacleEdges obstacle =
     case obstacle of
         HorizontalWall ( x, y ) length ->
-            List.range x (x + length - 1) |> List.map (\newX -> ( ( newX, y ), ( newX, y + 1 ) ))
+            List.range x (x + length - 1)
+                |> List.concatMap
+                    (\newX ->
+                        [ ( ( newX, y ), ( newX - 1, y + 1 ) )
+                        , ( ( newX, y ), ( newX, y + 1 ) )
+                        , ( ( newX, y ), ( newX + 1, y + 1 ) )
+                        , ( ( newX, y + 1 ), ( newX - 1, y ) )
+                        , ( ( newX, y + 1 ), ( newX, y ) )
+                        , ( ( newX, y + 1 ), ( newX + 1, y ) )
+                        ]
+                    )
 
         VerticalWall ( x, y ) length ->
-            List.range (y - length + 1) y |> List.map (\newY -> ( ( x - 1, newY ), ( x, newY ) ))
+            List.range (y - length + 1) y
+                |> List.concatMap
+                    (\newY ->
+                        [ ( ( x - 1, newY ), ( x, newY - 1 ) )
+                        , ( ( x - 1, newY ), ( x, newY ) )
+                        , ( ( x - 1, newY ), ( x, newY + 1 ) )
+                        , ( ( x, newY ), ( x - 1, newY - 1 ) )
+                        , ( ( x, newY ), ( x - 1, newY ) )
+                        , ( ( x, newY ), ( x - 1, newY + 1 ) )
+                        ]
+                    )
 
 
 obstacleToEntity : Obstacle -> Scene3d.Entity Meters
