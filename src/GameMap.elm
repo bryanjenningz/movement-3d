@@ -171,11 +171,12 @@ shortestPath obstacles start end =
             |> Set.fromList
         )
         (Queue.fromList [ ( start, [] ) ])
+        (Set.fromList [ start ])
         end
 
 
-shortestPath_ : Set ( Xy, Xy ) -> Queue ( Xy, List Xy ) -> Xy -> Maybe (List Xy)
-shortestPath_ unwalkableParts queue end =
+shortestPath_ : Set ( Xy, Xy ) -> Queue ( Xy, List Xy ) -> Set Xy -> Xy -> Maybe (List Xy)
+shortestPath_ unwalkableParts queue visited end =
     case Queue.remove queue of
         ( Nothing, _ ) ->
             Nothing
@@ -185,18 +186,23 @@ shortestPath_ unwalkableParts queue end =
                 Just (List.reverse (end :: path))
 
             else
+                let
+                    newNeighbors =
+                        neighbors xy
+                            |> List.filter
+                                (\neighbor ->
+                                    (not <| Set.member neighbor visited)
+                                        && (not <| Set.member ( neighbor, xy ) unwalkableParts)
+                                        && (not <| Set.member ( xy, neighbor ) unwalkableParts)
+                                )
+                in
                 shortestPath_ unwalkableParts
                     (List.foldl
                         (\neighbor newQueue_ -> Queue.add ( neighbor, xy :: path ) newQueue_)
                         newQueue
-                        (neighbors xy
-                            |> List.filter
-                                (\neighbor ->
-                                    (not <| Set.member ( neighbor, xy ) unwalkableParts)
-                                        && (not <| Set.member ( xy, neighbor ) unwalkableParts)
-                                )
-                        )
+                        newNeighbors
                     )
+                    (List.foldl Set.insert visited newNeighbors)
                     end
 
 
