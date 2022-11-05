@@ -72,7 +72,7 @@ type alias Wall =
 
 gameWalls : List (Scene3d.Entity Meters)
 gameWalls =
-    viewBuilding (Point3d.meters 4 2 0)
+    viewBuilding ( 4, 2 )
 
 
 viewWall : Wall -> Scene3d.Entity Meters
@@ -88,11 +88,11 @@ viewWall { x1, y1, x2, y2 } =
         (Point3d.meters x2 y2 wallHeight)
 
 
-viewBuilding : Point3d Meters Meters -> List (Scene3d.Entity Meters)
-viewBuilding location =
+viewBuilding : Xy -> List (Scene3d.Entity Meters)
+viewBuilding xy =
     let
-        { x, y } =
-            Point3d.toMeters location
+        ( x, y ) =
+            Tuple.mapBoth toFloat toFloat xy
     in
     [ { x1 = x + 0.5, y1 = y + 4.5, x2 = x + 0.5, y2 = y + 0.5 }
     , { x1 = x + 0.5, y1 = y + 4.5, x2 = x + 3.5, y2 = y + 4.5 }
