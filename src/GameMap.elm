@@ -1,4 +1,4 @@
-module GameMap exposing (Obstacle(..), gameWalls, shortestPath, tiles, unwalkableEdges)
+module GameMap exposing (Obstacle(..), gameWallEntities, shortestGamePath, shortestPath, tiles, unwalkableEdges)
 
 import Color exposing (Color)
 import Length exposing (Meters)
@@ -85,12 +85,17 @@ type Obstacle
     | VerticalWall Xy WallLength
 
 
-gameWalls : List (Scene3d.Entity Meters)
+gameWallEntities : List (Scene3d.Entity Meters)
+gameWallEntities =
+    List.map obstacleToEntity gameWalls
+
+
+gameWalls : List Obstacle
 gameWalls =
     viewBuilding ( 5, 7 )
 
 
-viewBuilding : Xy -> List (Scene3d.Entity Meters)
+viewBuilding : Xy -> List Obstacle
 viewBuilding ( x, y ) =
     [ VerticalWall ( x, y ) 4
     , HorizontalWall ( x, y ) 3
@@ -98,7 +103,6 @@ viewBuilding ( x, y ) =
     , HorizontalWall ( x, y - 4 ) 1
     , HorizontalWall ( x + 2, y - 4 ) 1
     ]
-        |> List.map obstacleToEntity
 
 
 unwalkableEdges : List Obstacle -> List ( Xy, Xy )
@@ -152,6 +156,11 @@ obstacleToEntity obstacle =
                 (Point3d.meters (toFloat x - 0.5) (toFloat y - 0.5) 0)
                 (Point3d.meters (toFloat x - 0.5) (toFloat y - toFloat length - 0.5) 0)
                 (Point3d.meters (toFloat x - 0.5) (toFloat y - toFloat length - 0.5) 1)
+
+
+shortestGamePath : Xy -> Xy -> Maybe (List Xy)
+shortestGamePath =
+    shortestPath gameWalls
 
 
 shortestPath : List Obstacle -> Xy -> Xy -> Maybe (List Xy)

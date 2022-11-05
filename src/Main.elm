@@ -410,14 +410,18 @@ applyMouseDown mousePoint model =
                         { model | travelPath = Monster.shortestPath start destination, appearance = PickingUpItem groundItem }
 
                     _ ->
+                        let
+                            startXy =
+                                ( Point3d.toMeters start |> .x |> round, Point3d.toMeters start |> .y |> round )
+
+                            destinationXy =
+                                ( Point3d.toMeters destination |> .x |> round, Point3d.toMeters destination |> .y |> round )
+                        in
                         { model
                             | travelPath =
-                                case Monster.shortestPath start destination of
-                                    [] ->
-                                        [ destination ]
-
-                                    path ->
-                                        path
+                                GameMap.shortestGamePath startXy destinationXy
+                                    |> Maybe.withDefault []
+                                    |> List.map (\( x, y ) -> Point3d.meters (toFloat x) (toFloat y) 0)
                             , appearance = Standing
                         }
 
@@ -624,7 +628,7 @@ viewGame model =
         [ Scene3d.unlit
             { entities =
                 GameMap.tiles
-                    ++ GameMap.gameWalls
+                    ++ GameMap.gameWallEntities
                     ++ List.map Inventory.viewGroundItem model.groundItems
                     ++ (viewSquare (playerColor model.appearance) model.location
                             :: List.map viewMonster model.monsters

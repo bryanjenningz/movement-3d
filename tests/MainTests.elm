@@ -127,8 +127,9 @@ mouseDown =
                 Expect.equal (Main.update (Main.MouseDown (Point2d.pixels 300 200)) initialModel)
                     ( { initialModel
                         | travelPath =
-                            [ Point3d.fromMeters { x = -1, y = -1, z = 0 }
-                            , Point3d.fromMeters { x = -2, y = -2, z = 0 }
+                            [ Point3d.fromMeters { x = 0, y = 0, z = 0 }
+                            , Point3d.fromMeters { x = -1, y = 0, z = 0 }
+                            , Point3d.fromMeters { x = -2, y = -1, z = 0 }
                             , Point3d.fromMeters { x = -3, y = -2, z = 0 }
                             ]
                       }
