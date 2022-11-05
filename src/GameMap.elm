@@ -180,7 +180,13 @@ shortestPath_ unwalkableParts queue end =
                     (List.foldl
                         (\neighbor newQueue_ -> Queue.add ( neighbor, xy :: path ) newQueue_)
                         newQueue
-                        (neighbors xy)
+                        (neighbors xy
+                            |> List.filter
+                                (\neighbor ->
+                                    (not <| Set.member ( neighbor, xy ) unwalkableParts)
+                                        && (not <| Set.member ( xy, neighbor ) unwalkableParts)
+                                )
+                        )
                     )
                     end
 

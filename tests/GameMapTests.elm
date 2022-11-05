@@ -89,4 +89,17 @@ shortestPathTests =
                     , Just [ ( 0, 0 ), ( 1, 1 ), ( 2, 2 ) ]
                     , Just [ ( 0, 0 ), ( 1, 0 ), ( 2, 1 ), ( 3, 2 ) ]
                     ]
+        , test "Give the shortest path between 2 points and goes around obstacles" <|
+            \_ ->
+                Expect.equalLists
+                    [ shortestPath
+                        [ VerticalWall ( 0, 0 ) 1
+                        , VerticalWall ( 1, 0 ) 1
+                        , HorizontalWall ( 0, 0 ) 1
+                        , HorizontalWall ( 0, -1 ) 1
+                        ]
+                        ( 0, 0 )
+                        ( 0, 1 )
+                    ]
+                    [ Nothing ]
         ]
