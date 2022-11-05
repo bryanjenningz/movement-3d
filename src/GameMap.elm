@@ -5,6 +5,7 @@ import Length exposing (Meters)
 import Point3d exposing (Point3d)
 import Scene3d
 import Scene3d.Material as Material
+import Set exposing (Set)
 import Vector3d
 
 
@@ -134,4 +135,15 @@ obstacleToEntity obstacle =
 
 shortestPath : List Obstacle -> Xy -> Xy -> Maybe (List Xy)
 shortestPath obstacles start end =
+    shortestPath_
+        (unwalkableEdges obstacles
+            |> List.concatMap (\( xy1, xy2 ) -> [ ( xy1, xy2 ), ( xy2, xy1 ) ])
+            |> Set.fromList
+        )
+        start
+        end
+
+
+shortestPath_ : Set ( Xy, Xy ) -> Xy -> Xy -> Maybe (List Xy)
+shortestPath_ unwalkableParts start end =
     Just []
