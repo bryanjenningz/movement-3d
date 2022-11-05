@@ -1,4 +1,4 @@
-module GameMap exposing (tiles)
+module GameMap exposing (tiles, walls)
 
 import Color exposing (Color)
 import Length exposing (Meters)
@@ -60,3 +60,59 @@ viewTile { color, xLength, yLength, x, y, z } =
         (Point3d.translateBy (Vector3d.meters (xLength / 2) -(yLength / 2) 0) point)
         (Point3d.translateBy (Vector3d.meters (xLength / 2) (yLength / 2) 0) point)
         (Point3d.translateBy (Vector3d.meters -(xLength / 2) (yLength / 2) 0) point)
+
+
+type alias Wall =
+    { x1 : Float
+    , y1 : Float
+    , x2 : Float
+    , y2 : Float
+    }
+
+
+gameWalls : List Wall
+gameWalls =
+    [ { x1 = 4.5
+      , y1 = 6.5
+      , x2 = 4.5
+      , y2 = 2.5
+      }
+    , { x1 = 4.5
+      , y1 = 6.5
+      , x2 = 7.5
+      , y2 = 6.5
+      }
+    , { x1 = 7.5
+      , y1 = 6.5
+      , x2 = 7.5
+      , y2 = 2.5
+      }
+    , { x1 = 6.5
+      , y1 = 2.5
+      , x2 = 7.5
+      , y2 = 2.5
+      }
+    , { x1 = 4.5
+      , y1 = 2.5
+      , x2 = 5.5
+      , y2 = 2.5
+      }
+    ]
+
+
+walls : List (Scene3d.Entity Meters)
+walls =
+    List.map viewWall gameWalls
+
+
+viewWall : Wall -> Scene3d.Entity Meters
+viewWall { x1, y1, x2, y2 } =
+    let
+        wallHeight =
+            1
+    in
+    Scene3d.quad (Material.color Color.darkBrown)
+        (Point3d.meters x1 y1 wallHeight)
+        (Point3d.meters x1 y1 0)
+        (Point3d.meters x2 y2 0)
+        (Point3d.meters x2 y2 wallHeight)
