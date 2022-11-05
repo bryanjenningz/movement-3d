@@ -270,7 +270,7 @@ applyAnimationFrame time model =
                 PickingUpItem groundItem ->
                     updateLocationTravelPath model.location model.travelPath
 
-        ( newState, newInventory, newGroundItems ) =
+        ( newAppearance, newInventory, newGroundItems ) =
             case ( newTravelPath, model.appearance ) of
                 ( [], Attacking monster ) ->
                     ( Fighting monster, model.inventory, model.groundItems )
@@ -322,7 +322,7 @@ applyAnimationFrame time model =
             { model
                 | location = newLocation
                 , travelPath = newTravelPath
-                , appearance = newState
+                , appearance = newAppearance
                 , hits = newHits
                 , monsters = newMonsters
                 , now = time
