@@ -16,9 +16,15 @@ unwalkableEdgesTests =
                     -- Wall between ( 0, 0 ) and ( 0, 1 )
                     , unwalkableEdges [ HorizontalWall ( 0, 0 ) 1 ]
                     , unwalkableEdges [ HorizontalWall ( 0, 0 ) 2 ]
+
+                    -- Wall between ( 0, 0 ) and ( -1, 0 )
+                    , unwalkableEdges [ VerticalWall ( 0, 0 ) 1 ]
+                    , unwalkableEdges [ VerticalWall ( 0, 0 ) 2 ]
                     ]
                     [ []
                     , [ ( ( 0, 0 ), ( 0, 1 ) ) ]
                     , [ ( ( 0, 0 ), ( 0, 1 ) ), ( ( 1, 0 ), ( 1, 1 ) ) ]
+                    , [ ( ( -1, 0 ), ( 0, 0 ) ) ]
+                    , [ ( ( -1, -1 ), ( 0, -1 ) ), ( ( -1, 0 ), ( 0, 0 ) ) ]
                     ]
         ]

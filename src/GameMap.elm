@@ -113,6 +113,7 @@ type alias WallLength =
 
 type Obstacle
     = HorizontalWall Xy WallLength
+    | VerticalWall Xy WallLength
 
 
 unwalkableEdges : List Obstacle -> List ( Xy, Xy )
@@ -125,3 +126,6 @@ obstacleEdges obstacle =
     case obstacle of
         HorizontalWall ( x, y ) length ->
             List.range x (x + length - 1) |> List.map (\newX -> ( ( newX, y ), ( newX, y + 1 ) ))
+
+        VerticalWall ( x, y ) length ->
+            List.range (y - length + 1) y |> List.map (\newY -> ( ( x - 1, newY ), ( x, newY ) ))
