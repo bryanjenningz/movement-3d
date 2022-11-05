@@ -70,36 +70,6 @@ type alias Wall =
     }
 
 
-gameWalls : List Wall
-gameWalls =
-    [ { x1 = 4.5
-      , y1 = 6.5
-      , x2 = 4.5
-      , y2 = 2.5
-      }
-    , { x1 = 4.5
-      , y1 = 6.5
-      , x2 = 7.5
-      , y2 = 6.5
-      }
-    , { x1 = 7.5
-      , y1 = 6.5
-      , x2 = 7.5
-      , y2 = 2.5
-      }
-    , { x1 = 6.5
-      , y1 = 2.5
-      , x2 = 7.5
-      , y2 = 2.5
-      }
-    , { x1 = 4.5
-      , y1 = 2.5
-      , x2 = 5.5
-      , y2 = 2.5
-      }
-    ]
-
-
 walls : List (Scene3d.Entity Meters)
 walls =
     viewBuilding (Point3d.meters 4 2 0)
