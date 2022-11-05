@@ -24,21 +24,21 @@ gameTiles =
       , x = 0
       , y = 0
       , z = -0.02
-      , xLength = 13
-      , yLength = 13
+      , xLength = 17
+      , yLength = 15
       }
     , { color = Color.darkGray
       , x = 0
       , y = 0
       , z = -0.01
       , xLength = 3
-      , yLength = 13
+      , yLength = 15
       }
     , { color = Color.darkGray
-      , x = 4
+      , x = 5
       , y = 0
       , z = -0.01
-      , xLength = 5
+      , xLength = 7
       , yLength = 3
       }
     ]
